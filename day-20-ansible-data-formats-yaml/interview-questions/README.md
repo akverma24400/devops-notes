@@ -51,3 +51,7 @@ Runs the tasks directly on the Ansible server itself instead of over SSH, so no 
 **12. What is the `debug` module used for?**
 
 To print a message or a variable's value during a playbook run, like `echo` in shell: `debug: msg: "Hello"`.
+
+**13. Can one playbook have more than one play? Why?**
+
+Yes, a multi-play playbook: a list of plays, each with its own `hosts` and `tasks`, run top to bottom. It lets one file configure different groups in order, e.g. database, then backend, then frontend.

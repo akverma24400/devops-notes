@@ -21,6 +21,7 @@
 7. [First playbooks](#first-playbooks)
    - [01-playbook.yaml: ping the Ansible server itself](#01-playbookyaml-ping-the-ansible-server-itself)
    - [02-playbook.yaml: print a message (debug)](#02-playbookyaml-print-a-message-debug)
+   - [03-multi-play.yaml: many plays in one playbook](#03-multi-playyaml-many-plays-in-one-playbook)
    - [Run a playbook](#run-a-playbook)
 8. [Ansible as a programming language](#ansible-as-a-programming-language)
 9. [Variables](#variables)
@@ -414,6 +415,94 @@ playbook.yaml
 | `ansible.builtin.debug:` | the **`debug` module** = prints a message (like `echo` in shell) |
 | `ansible.builtin.` | the **collection** the module comes from (`ansible.builtin` = built-in modules). `debug:` alone also works |
 | `msg: "Hello Ansible..!"` | the message to print |
+
+### 03-multi-play.yaml: many plays in one playbook
+
+**Definition:** **Multi-play playbook** = one playbook file with **more than one play**. Each play has its own `name`, `hosts` and `tasks`, and the plays run **one after another, top to bottom**.
+
+```yaml
+- name: PLAY-1
+  hosts: local
+  connection: local
+  tasks:
+  - name: PLAY-1 and TASK-1
+    debug:
+      msg: "Hello from PLAY-1 TASK-1"
+
+  - name: PLAY-1 and TASK-2
+    debug:
+      msg: "Hello from PLAY-1 TASK-2"
+
+- name: PLAY-2
+  hosts: local
+  connection: local
+  tasks:
+  - name: PLAY-2 and TASK-1
+    debug:
+      msg: "Hello from PLAY-2 TASK-1"
+
+  - name: PLAY-2 and TASK-2
+    debug:
+      msg: "Hello from PLAY-2 TASK-2"
+```
+
+**Structure:**
+
+```
+03-multi-play.yaml   (a list of plays)
+ ├── - PLAY-1   (hosts: local)
+ │     ├── - TASK-1  → debug
+ │     └── - TASK-2  → debug
+ └── - PLAY-2   (hosts: local)
+       ├── - TASK-1  → debug
+       └── - TASK-2  → debug
+```
+
+| Part | Means |
+|---|---|
+| `- name: PLAY-1` (no indentation) | **play 1** starts; the `-` at the left edge = a new item in the list of plays |
+| `- name: PLAY-2` (no indentation) | **play 2** starts |
+| `- name: PLAY-1 and TASK-1` (under `tasks:`) | a **task** inside the play (`-` = item in the list of tasks) |
+| `debug:` + `msg:` | each task prints its message |
+
+> The **indentation** tells play from task: `-` at the left edge = **play**, `-` under `tasks:` = **task**.
+
+**Run order:** PLAY-1 TASK-1 → PLAY-1 TASK-2 → PLAY-2 TASK-1 → PLAY-2 TASK-2.
+
+**Why use more than one play?** Each play can target **different machines**. Example for RoboShop:
+
+```yaml
+- name: set up database
+  hosts: database          # play 1 → DB servers
+  ...
+- name: set up backend
+  hosts: backend           # play 2 → backend servers
+  ...
+- name: set up frontend
+  hosts: frontend          # play 3 → frontend server
+  ...
+```
+
+One file, one command → DB first, then backend, then frontend, in the **right order**.
+
+**Expected output** of `ansible-playbook -i inventory.ini 03-multi-play.yaml` (short):
+
+```
+PLAY [PLAY-1] ******************************
+TASK [Gathering Facts]        ok: [localhost]
+TASK [PLAY-1 and TASK-1]      ok: [localhost]  msg: Hello from PLAY-1 TASK-1
+TASK [PLAY-1 and TASK-2]      ok: [localhost]  msg: Hello from PLAY-1 TASK-2
+
+PLAY [PLAY-2] ******************************
+TASK [Gathering Facts]        ok: [localhost]
+TASK [PLAY-2 and TASK-1]      ok: [localhost]  msg: Hello from PLAY-2 TASK-1
+TASK [PLAY-2 and TASK-2]      ok: [localhost]  msg: Hello from PLAY-2 TASK-2
+
+PLAY RECAP *********************************
+localhost : ok=6  changed=0  unreachable=0  failed=0
+```
+
+`ok=6` = 2 plays × (1 Gathering Facts + 2 tasks). **Gathering Facts runs once per play.**
 
 ### Run a playbook
 
