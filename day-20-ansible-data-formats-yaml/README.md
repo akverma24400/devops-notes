@@ -25,6 +25,7 @@
    - [Run a playbook](#run-a-playbook)
 8. [Create the frontend server (managed node)](#create-the-frontend-server-managed-node)
 9. [04-nginx.yaml: install and start nginx on the frontend](#04-nginxyaml-install-and-start-nginx-on-the-frontend)
+   - [How the `package` module decides: dnf or apt?](#how-the-package-module-decides-dnf-or-apt)
 10. [Ansible as a programming language](#ansible-as-a-programming-language)
 11. [Variables](#variables)
 12. [What I learned](#what-i-learned)
@@ -636,6 +637,41 @@ ansible-server ── ssh (port 22, private IP) ──► roboshop-frontend
 | `service:` | module that manages services (like `systemctl`) |
 | `state: started` | nginx should be **running** (`systemctl start nginx`) |
 | `enabled: yes` | nginx should **start on boot** (`systemctl enable nginx`) |
+
+### How the `package` module decides: dnf or apt?
+
+**Definition:** **`package` module** = a **generic** install module. It **checks the target machine's OS** and then uses the **right package manager** for that OS.
+
+We only write `package: name=nginx`. Ansible does the rest **in the background**:
+
+```
+package: name=nginx state=present
+        │
+        ▼
+Ansible checks the target machine's OS   (Gathering Facts)
+        │
+        ├── RHEL / Amazon Linux / CentOS ──► dnf (or yum) install nginx
+        ├── Ubuntu / Debian              ──► apt-get install nginx
+        └── other OS                     ──► its own package manager
+```
+
+| Target OS | What Ansible uses in the background |
+|---|---|
+| RHEL 9, Amazon Linux, CentOS | `dnf` (older: `yum`) |
+| Ubuntu, Debian | `apt` / `apt-get` |
+| SUSE | `zypper` |
+
+**All the checks happen in the background:**
+- which OS is it? → pick `dnf` / `apt`
+- is nginx **already installed**? → yes: do nothing (`ok`); no: install it (`changed`)
+
+**That is Ansible's simplicity:** we only say **what** we want (`nginx` should be present). **How** to do it on each OS is Ansible's job.
+
+| Shell script | Ansible `package` |
+|---|---|
+| we write `if` checks for the OS: `dnf` on RHEL, `apt` on Ubuntu | one line, works on any OS |
+| we write the "already installed?" check | Ansible checks it |
+| works only on **one** OS family (homogeneous, Day 19) | works on **any** OS (heterogeneous) |
 
 **Same as Linux commands:**
 
