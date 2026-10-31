@@ -17,10 +17,11 @@
    - [Student details in YAML](#student-details-in-yaml)
    - [XML vs JSON vs YAML](#xml-vs-json-vs-yaml)
    - [Check your YAML: yamlchecker.com](#check-your-yaml-yamlcheckercom)
-6. [Ansible as a programming language](#ansible-as-a-programming-language)
-7. [Variables](#variables)
-8. [What I learned](#what-i-learned)
-9. [Interview Questions](#interview-questions)
+6. [Ansible installation and checking the inventory](#ansible-installation-and-checking-the-inventory)
+7. [Ansible as a programming language](#ansible-as-a-programming-language)
+8. [Variables](#variables)
+9. [What I learned](#what-i-learned)
+10. [Interview Questions](#interview-questions)
 
 ---
 
@@ -293,6 +294,60 @@ skills:               # map (no -)
 
 Check the YAML before running the playbook, so a small spacing mistake doesn't fail the run.
 
+## Ansible installation and checking the inventory
+
+**Definition:** **`ansible-inventory --graph`** = shows all machines in the inventory as a **tree of groups**, so we can check the inventory is correct before running anything.
+
+**Steps:**
+
+| # | Step | Command |
+|---|---|---|
+| 1 | Connect to the EC2 server (Ansible server) | `ssh ec2-user@<ansible-server-ip>` |
+| 2 | Install Ansible | `sudo dnf install ansible -y` |
+| 3 | Clone the code repo | `git clone https://github.com/Abhignadumpala/ansible-code.git` |
+| 4 | Go into the repo | `cd ansible-code` |
+| 5 | Check the inventory machines | `ansible-inventory -i inventory.ini --graph` |
+
+```bash
+sudo dnf install ansible -y
+git clone https://github.com/Abhignadumpala/ansible-code.git
+cd ansible-code
+ansible-inventory -i inventory.ini --graph
+```
+
+**Expected output** (for the inventory above):
+
+```
+@all:
+  |--@ungrouped:
+  |  |--172.12.123.13
+  |  |--172.12.123.15
+  |  |--172.12.123.16
+  |--@roboshop:
+  |  |--@frontend:
+  |  |  |--172.31.20.30
+  |  |--@backend:
+  |  |  |--172.12.123.50
+  |  |  |--172.12.123.51
+  |  |  |--172.12.123.56
+  |  |--@database:
+  |  |  |--172.12.123.45
+  |  |  |--172.12.123.46
+  |  |  |--172.12.123.47
+  |--@local:
+  |  |--localhost
+```
+
+| In the output | Means |
+|---|---|
+| `@` | a **group** (no `@` = a machine) |
+| `@all` | every machine in the inventory |
+| `@ungrouped` | the **orphans** (IPs at the top) |
+| `@roboshop` → `@frontend`, `@backend`, `@database` | the **group of groups** and its child groups |
+| `@local` → `localhost` | the Ansible server itself |
+
+> `--graph` only **reads the inventory file**; it does not connect to the servers. To check the connection, use `-m ping`.
+
 ## Ansible as a programming language
 
 **Definition:** Ansible playbooks also have the **basic building blocks of a programming language**, like shell scripting did:
@@ -351,6 +406,7 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 - **`[]` = list**, **`{}` = map/object**. In YAML: `-` = list item, `key: value` = map, indentation = nesting.
 - Wrote the same student in XML (tags), JSON (brackets) and YAML (indentation): YAML is the shortest.
 - Check YAML at **yamlchecker.com**.
+- Ansible server: `sudo dnf install ansible -y` → `git clone` the code → `ansible-inventory -i inventory.ini --graph` shows `@all`, `@ungrouped`, `@roboshop`... as a tree.
 - Ansible has variables, data types, conditions, loops, functions, error handling. Started with **variables**: `vars:` + `{{ name }}`.
 
 ```

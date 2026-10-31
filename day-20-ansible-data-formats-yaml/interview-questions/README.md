@@ -35,3 +35,7 @@ Tabs instead of spaces, wrong indentation, no space after `:`, and commas at the
 **8. How do you define and use a variable in a playbook?**
 
 Define under `vars:` (e.g. `course: ansible`) and use with `{{ course }}`, e.g. in a `debug` module's `msg`.
+
+**9. How do you check which machines are in your inventory?**
+
+`ansible-inventory -i inventory.ini --graph`. It prints a tree of groups (`@all`, `@ungrouped`, `@roboshop`, ...) and their machines. It only reads the file; use `-m ping` to test the connection.
