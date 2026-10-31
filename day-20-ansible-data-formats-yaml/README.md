@@ -79,29 +79,68 @@ Output: just the ID, e.g. `i-0abc123...`. Easy to use in scripts.
 **Definition:** **Inventory** = the list of **machines Ansible is targeting** (IPs or hostnames), usually in a file like `inventory.ini`.
 
 ```ini
-[frontend]
-172.31.20.30
+; orphans: IPs at the top, not in any group
+172.12.123.13
+172.12.123.15
+172.12.123.16
+
+[database]
+172.12.123.45
+172.12.123.46
+172.12.123.47
 
 [backend]
 172.12.123.50
 172.12.123.51
+172.12.123.56
 
-[database]
-172.12.123.45
+[frontend]
+172.31.20.30
 
 ; group of groups
 [roboshop:children]
 frontend
 backend
 database
+
+[local]
+localhost
+
+[frontend:vars]
+course=ansible
+trainer=Sivakumar Reddy M
+duration=10 hrs
 ```
 
 | Part | Means |
 |---|---|
-| `[frontend]` | a **group** name; servers listed under it |
-| `[roboshop:children]` | a **group of groups**: `roboshop` = frontend + backend + database |
+| IPs at the top (no `[group]` above them) | **orphans**: we don't know which group they belong to, so they are written at the **top** (Ansible calls them `ungrouped`) |
+| `[database]` | **group**: all DB server IPs go here |
+| `[backend]` | **group**: all backend server IPs |
+| `[frontend]` | **group**: frontend server IP |
+| `[roboshop:children]` | **group of groups**: all RoboShop servers = `frontend` + `backend` + `database` |
+| `[local]` | group with `localhost` (the Ansible server itself) |
+| `[frontend:vars]` | **variables** for every server in the `frontend` group |
+| `;` | comment in an `.ini` file |
 
-Target a group: `ansible frontend -i inventory.ini -m ping`
+```
+                 roboshop  (group of groups)
+        ┌───────────┼────────────┐
+    frontend     backend      database
+   172.31.20.30  .50 .51 .56  .45 .46 .47
+
+  orphans (ungrouped): .13 .15 .16
+```
+
+**Target what you need:**
+
+| Command | Runs on |
+|---|---|
+| `ansible database -i inventory.ini -m ping` | only the 3 DB servers |
+| `ansible backend -i inventory.ini -m ping` | only the 3 backend servers |
+| `ansible roboshop -i inventory.ini -m ping` | **all RoboShop servers** (frontend + backend + database) |
+| `ansible ungrouped -i inventory.ini -m ping` | only the orphans |
+| `ansible all -i inventory.ini -m ping` | **every** server in the file |
 
 ## DTO and data formats
 

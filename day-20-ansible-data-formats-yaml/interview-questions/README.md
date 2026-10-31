@@ -14,7 +14,7 @@ It picks only the instance ID of the first created instance from the JSON output
 
 **3. What is an inventory in Ansible?**
 
-The list of machines Ansible targets, usually in `inventory.ini`, grouped like `[frontend]`, `[backend]`. A group of groups uses `[name:children]`.
+The list of machines Ansible targets, usually in `inventory.ini`, grouped like `[frontend]`, `[backend]`. A group of groups uses `[name:children]` (e.g. `[roboshop:children]` = frontend + backend + database). IPs at the top without a group are **orphans** (Ansible's `ungrouped` group).
 
 **4. What is a DTO?**
 
