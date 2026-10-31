@@ -18,10 +18,14 @@
    - [XML vs JSON vs YAML](#xml-vs-json-vs-yaml)
    - [Check your YAML: yamlchecker.com](#check-your-yaml-yamlcheckercom)
 6. [Ansible installation and checking the inventory](#ansible-installation-and-checking-the-inventory)
-7. [Ansible as a programming language](#ansible-as-a-programming-language)
-8. [Variables](#variables)
-9. [What I learned](#what-i-learned)
-10. [Interview Questions](#interview-questions)
+7. [First playbooks](#first-playbooks)
+   - [01-playbook.yaml: ping the Ansible server itself](#01-playbookyaml-ping-the-ansible-server-itself)
+   - [02-playbook.yaml: print a message (debug)](#02-playbookyaml-print-a-message-debug)
+   - [Run a playbook](#run-a-playbook)
+8. [Ansible as a programming language](#ansible-as-a-programming-language)
+9. [Variables](#variables)
+10. [What I learned](#what-i-learned)
+11. [Interview Questions](#interview-questions)
 
 ---
 
@@ -348,6 +352,96 @@ ansible-inventory -i inventory.ini --graph
 
 > `--graph` only **reads the inventory file**; it does not connect to the servers. To check the connection, use `-m ping`.
 
+## First playbooks
+
+**Definition:** **Playbook** = a **YAML file** with a list of **plays**. Each play says **which machines** (`hosts`) and **what to do** (`tasks`). Each task runs **one module**.
+
+```
+playbook.yaml
+ └── play        (name, hosts, connection)
+      └── tasks
+           ├── task 1  → module
+           └── task 2  → module
+```
+
+### 01-playbook.yaml: ping the Ansible server itself
+
+```yaml
+- name: ping demo
+  hosts: local # target ansible server itself
+  connection: local # It will not expect credentials
+  tasks: # tasks == modules == collections
+  - name: ping localhost
+    ping:
+```
+
+| Line | Means |
+|---|---|
+| `- name: ping demo` | start of a **play** (`-` = list item, a playbook is a list of plays); `name` = a label shown in the output |
+| `hosts: local` | **which machines**: the `[local]` group from `inventory.ini` (= `localhost`, the Ansible server itself) |
+| `connection: local` | run **directly** on this machine, **no SSH** → no username/password needed |
+| `tasks:` | the **list of tasks** to run (each task = one module) |
+| `- name: ping localhost` | first task, with a label |
+| `ping:` | the **module**: checks Ansible works on the machine, answers `pong` |
+
+### 02-playbook.yaml: print a message (debug)
+
+```yaml
+- name: demo on debug
+  hosts: local
+  connection: local
+  tasks:
+  - name: print hello world
+    ansible.builtin.debug:
+      msg: "Hello Ansible..!"
+```
+
+| Line | Means |
+|---|---|
+| `hosts: local` + `connection: local` | same as before: run on the Ansible server itself |
+| `ansible.builtin.debug:` | the **`debug` module** = prints a message (like `echo` in shell) |
+| `ansible.builtin.` | the **collection** the module comes from (`ansible.builtin` = built-in modules). `debug:` alone also works |
+| `msg: "Hello Ansible..!"` | the message to print |
+
+### Run a playbook
+
+```bash
+ansible-playbook -i inventory.ini 01-playbook.yaml
+ansible-playbook -i inventory.ini 02-playbook.yaml
+```
+
+| Part | Means |
+|---|---|
+| `ansible-playbook` | run a **playbook** (`ansible` = ad-hoc command) |
+| `-i inventory.ini` | inventory file, so `hosts: local` can be found |
+| `02-playbook.yaml` | the playbook file |
+
+**Expected output** of `02-playbook.yaml`:
+
+```
+PLAY [demo on debug] ***********************************************
+
+TASK [Gathering Facts] *********************************************
+ok: [localhost]
+
+TASK [print hello world] *******************************************
+ok: [localhost] =>
+  msg: Hello Ansible..!
+
+PLAY RECAP *********************************************************
+localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
+```
+
+| Output part | Means |
+|---|---|
+| `PLAY [demo on debug]` | the play's `name` |
+| `TASK [Gathering Facts]` | Ansible first collects info about the machine (runs automatically) |
+| `TASK [print hello world]` | our task's `name` |
+| `ok` | task ran, nothing changed |
+| `PLAY RECAP` | summary: how many tasks were `ok`, `changed`, `failed` per machine |
+
+> Always give every play and task a clear `name`: it's what you read in the output.
+
 ## Ansible as a programming language
 
 **Definition:** Ansible playbooks also have the **basic building blocks of a programming language**, like shell scripting did:
@@ -407,6 +501,7 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 - Wrote the same student in XML (tags), JSON (brackets) and YAML (indentation): YAML is the shortest.
 - Check YAML at **yamlchecker.com**.
 - Ansible server: `sudo dnf install ansible -y` → `git clone` the code → `ansible-inventory -i inventory.ini --graph` shows `@all`, `@ungrouped`, `@roboshop`... as a tree.
+- First playbooks: a play = `name` + `hosts` + `tasks`; `hosts: local` + `connection: local` = run on the Ansible server itself, no SSH. `ping` module → pong, `debug` module → prints `msg`. Run with `ansible-playbook -i inventory.ini <file>.yaml`.
 - Ansible has variables, data types, conditions, loops, functions, error handling. Started with **variables**: `vars:` + `{{ name }}`.
 
 ```

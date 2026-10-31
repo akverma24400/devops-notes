@@ -39,3 +39,15 @@ Define under `vars:` (e.g. `course: ansible`) and use with `{{ course }}`, e.g. 
 **9. How do you check which machines are in your inventory?**
 
 `ansible-inventory -i inventory.ini --graph`. It prints a tree of groups (`@all`, `@ungrouped`, `@roboshop`, ...) and their machines. It only reads the file; use `-m ping` to test the connection.
+
+**10. What is the structure of a playbook?**
+
+A YAML list of plays. Each play has a `name`, `hosts` (which machines from the inventory) and `tasks` (a list where each task runs one module). Run it with `ansible-playbook -i inventory.ini file.yaml`.
+
+**11. What does `connection: local` do?**
+
+Runs the tasks directly on the Ansible server itself instead of over SSH, so no username/password is needed.
+
+**12. What is the `debug` module used for?**
+
+To print a message or a variable's value during a playbook run, like `echo` in shell: `debug: msg: "Hello"`.
