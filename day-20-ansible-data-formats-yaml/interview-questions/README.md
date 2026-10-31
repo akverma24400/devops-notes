@@ -67,3 +67,7 @@ Yes, a multi-play playbook: a list of plays, each with its own `hosts` and `task
 **16. What does `become: yes` do?**
 
 Runs the tasks as root (sudo). Needed for installing packages and managing services. It is the playbook version of `-b` in ad-hoc commands.
+
+**17. nginx is running but the browser times out. What do you check?**
+
+The security group: port 80 must be allowed inbound (e.g. `0.0.0.0/0` for public HTTP). A timeout usually means the firewall/SG drops the traffic; "connection refused" means the port is reachable but nothing is listening (nginx not running).

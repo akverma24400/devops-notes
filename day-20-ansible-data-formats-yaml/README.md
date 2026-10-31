@@ -698,10 +698,74 @@ ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<
 | 1st run | `changed` for both tasks | nginx installed and started |
 | 2nd run | `ok`, `changed=0` | already installed and running → **idempotent**, nothing to do |
 
-**Step 4: check it.** Open `http://<frontend-public-ip>` in the browser → the **nginx welcome page** (port 80 must be allowed in the security group).
+**Step 4: start nginx with the service module (ad-hoc)**
+
+**Definition:** **`service` module** = starts, stops, restarts or enables a service on the target machine (like `systemctl`).
+
+The playbook already starts nginx. To start it as a **one-time ad-hoc command** (same thing, from the Ansible server):
+
+```bash
+ansible frontend -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> -b -m service -a "name=nginx state=started enabled=yes"
+```
+
+| Part | Means |
+|---|---|
+| `frontend` | target the `[frontend]` group |
+| `-b` | become root (starting services needs root) |
+| `-m service` | use the **service** module |
+| `name=nginx` | which service |
+| `state=started` | start it now (`systemctl start nginx`) |
+| `enabled=yes` | start on boot (`systemctl enable nginx`) |
+
+Output: `CHANGED` if nginx was stopped, `SUCCESS` (`changed: false`) if it was already running.
+
+**Step 5: allow port 80 in the `roboshop-common` security group**
+
+**Definition:** **Inbound rule** = a security group rule that **allows traffic into** the server on a port. nginx listens on **port 80 (HTTP)**, so the browser needs port 80 open.
+
+AWS console: **EC2 → Security Groups → `roboshop-common` → Inbound rules → Edit inbound rules → Add rule**
+
+| Type | Protocol | Port | Source |
+|---|---|---|---|
+| HTTP | TCP | **80** | `0.0.0.0/0` (anywhere) |
+
+Or with AWS CLI:
+
+```bash
+aws ec2 authorize-security-group-ingress \
+    --group-name roboshop-common \
+    --protocol tcp \
+    --port 80 \
+    --cidr 0.0.0.0/0
+```
+
+| Option | Means |
+|---|---|
+| `authorize-security-group-ingress` | **add an inbound** rule |
+| `--group-name roboshop-common` | to this security group |
+| `--protocol tcp --port 80` | allow TCP port 80 (HTTP) |
+| `--cidr 0.0.0.0/0` | from **anywhere** on the internet |
+
+**Step 6: check nginx from the web**
+
+| Where | Command | Expected |
+|---|---|---|
+| Browser | `http://<frontend-public-ip>` | **nginx welcome page** |
+| Terminal (your laptop) | `curl -I http://<frontend-public-ip>` | `HTTP/1.1 200 OK`, `Server: nginx` |
+| Ansible server (private IP) | `curl -I http://<frontend-private-ip>` | `HTTP/1.1 200 OK` |
+
+**If the page doesn't open:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| browser keeps loading → **timed out** | port 80 **not allowed** in the SG | add the port 80 inbound rule (Step 5) |
+| **connection refused** | nginx **not running** | run Step 4 (`state=started`) |
+| page opens but not nginx | wrong IP | use the **frontend's public IP**, not the Ansible server's |
 
 ```
-inventory.ini [frontend] ──► ansible-playbook 04-nginx.yaml ──ssh──► frontend: nginx installed + started
+inventory.ini [frontend] ──► ansible-playbook 04-nginx.yaml ──ssh (22)──► frontend: nginx installed + started
+                                                                              ▲
+browser ─────────────── http (port 80, allowed in roboshop-common) ──────────┘
 ```
 
 ## Ansible as a programming language
