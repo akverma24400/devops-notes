@@ -7,7 +7,7 @@
 ## Table of Contents
 
 1. [Code vs configuration](#code-vs-configuration)
-2. [Create the server with AWS CLI](#create-the-server-with-aws-cli)
+2. [Create the Ansible server with AWS CLI](#create-the-ansible-server-with-aws-cli)
 3. [Ansible: everything is a module](#ansible-everything-is-a-module)
 4. [Inventory: the machines Ansible targets](#inventory-the-machines-ansible-targets)
 5. [DTO and data formats](#dto-and-data-formats)
@@ -23,10 +23,11 @@
    - [02-playbook.yaml: print a message (debug)](#02-playbookyaml-print-a-message-debug)
    - [03-multi-play.yaml: many plays in one playbook](#03-multi-playyaml-many-plays-in-one-playbook)
    - [Run a playbook](#run-a-playbook)
-8. [Ansible as a programming language](#ansible-as-a-programming-language)
-9. [Variables](#variables)
-10. [What I learned](#what-i-learned)
-11. [Interview Questions](#interview-questions)
+8. [Create the frontend server (managed node)](#create-the-frontend-server-managed-node)
+9. [Ansible as a programming language](#ansible-as-a-programming-language)
+10. [Variables](#variables)
+11. [What I learned](#what-i-learned)
+12. [Interview Questions](#interview-questions)
 
 ---
 
@@ -43,16 +44,18 @@
 plain server ──(configuration: Ansible)──► ready server ──(+ code)──► app running
 ```
 
-## Create the server with AWS CLI
+## Create the Ansible server with AWS CLI
 
 **Definition:** **`aws ec2 run-instances`** = AWS CLI command that **creates** (launches) an EC2 instance.
+
+First we create the **Ansible server** (control node), where Ansible will be installed.
 
 ```bash
 aws ec2 run-instances \
     --image-id ami-0055977a6e828a4f4 \
     --instance-type t3.micro \
     --security-groups "roboshop-common" \
-    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=roboshop-frontend}]' \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ansible-server}]' \
     --query 'Instances[0].InstanceId' \
     --output text
 ```
@@ -62,7 +65,7 @@ aws ec2 run-instances \
 | `--image-id ami-...` | which **AMI** (OS image) to use |
 | `--instance-type t3.micro` | size of the server (CPU/RAM) |
 | `--security-groups "roboshop-common"` | security group (firewall) **by name** |
-| `--tag-specifications ... Value=roboshop-frontend` | gives the server the **Name** tag `roboshop-frontend` |
+| `--tag-specifications ... Value=ansible-server` | gives the server the **Name** tag `ansible-server` |
 | `--query 'Instances[0].InstanceId'` | from the big JSON output, pick only the **instance ID** of the first instance |
 | `--output text` | print it as plain text (no JSON) |
 
@@ -553,6 +556,44 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
 
 ![git pull then ansible-playbook 02-playbook.yaml output](images/example-02-playbook-run.png)
 
+## Create the frontend server (managed node)
+
+**Definition:** **Managed node** = a server that Ansible **connects to and configures**. Here: the RoboShop **frontend** server.
+
+Now that Ansible works on the Ansible server, we create a **second** server, `roboshop-frontend`, for Ansible to configure. Same command, only the **Name** tag changes:
+
+```bash
+aws ec2 run-instances \
+    --image-id ami-0055977a6e828a4f4 \
+    --instance-type t3.micro \
+    --security-groups "roboshop-common" \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=roboshop-frontend}]' \
+    --query 'Instances[0].InstanceId' \
+    --output text
+```
+
+| | Ansible server | Frontend server |
+|---|---|---|
+| Name tag | `ansible-server` | `roboshop-frontend` |
+| Role | **control node**: Ansible installed, runs playbooks | **managed node**: Ansible connects to it over SSH |
+| Ansible installed? | ✅ yes | ❌ no (agentless) |
+
+**Steps:**
+
+| # | Step | Command / where |
+|---|---|---|
+| 1 | Create the frontend server | the `aws ec2 run-instances` command above |
+| 2 | Get its **private IP** | AWS console, or `aws ec2 describe-instances --instance-ids <id> --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text` |
+| 3 | Put the IP under `[frontend]` in `inventory.ini` | `[frontend]`<br>`<frontend-private-ip>` |
+| 4 | Check the connection from the Ansible server | `ansible frontend -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> -m ping` → `pong` |
+
+```
+ansible-server ── ssh (port 22, private IP) ──► roboshop-frontend
+ (control node)                                   (managed node)
+```
+
+> Both servers use the `roboshop-common` security group, so **port 22** must be allowed there for the Ansible server to reach the frontend.
+
 ## Ansible as a programming language
 
 **Definition:** Ansible playbooks also have the **basic building blocks of a programming language**, like shell scripting did:
@@ -604,7 +645,7 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 ### Class summary
 
 - An app needs **code** + **configuration**; Ansible does the configuration.
-- Created the server with `aws ec2 run-instances`; `--query 'Instances[0].InstanceId' --output text` prints only the instance ID.
+- Created the **Ansible server** with `aws ec2 run-instances`, then (after the first playbooks) the **frontend server** with the same command and Name tag `roboshop-frontend`; `--query 'Instances[0].InstanceId' --output text` prints only the instance ID.
 - In Ansible **everything is a module** or a collection of modules.
 - **Inventory** = the machines Ansible targets, grouped (`[frontend]`, `[roboshop:children]`).
 - **DTO** = data carried between systems; written in XML, JSON or YAML.
