@@ -352,6 +352,18 @@ ansible-inventory -i inventory.ini --graph
 
 > `--graph` only **reads the inventory file**; it does not connect to the servers. To check the connection, use `-m ping`.
 
+**Show only one group:** add the group name at the end:
+
+| Command | Shows |
+|---|---|
+| `ansible-inventory -i inventory.ini --graph database` | `@database` and its 3 IPs |
+| `ansible-inventory -i inventory.ini --graph backend` | `@backend` and its 3 IPs |
+| `ansible-inventory -i inventory.ini --graph ungrouped` | the orphans |
+
+**Example** (class screenshot; I'll replace it with my own after the lab):
+
+![ansible-inventory --graph: full tree, then by group](images/example-inventory-graph-by-group.png)
+
 ## First playbooks
 
 **Definition:** **Playbook** = a **YAML file** with a list of **plays**. Each play says **which machines** (`hosts`) and **what to do** (`tasks`). Each task runs **one module**.
@@ -441,6 +453,16 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
 | `PLAY RECAP` | summary: how many tasks were `ok`, `changed`, `failed` per machine |
 
 > Always give every play and task a clear `name`: it's what you read in the output.
+
+**Examples** (class screenshots; I'll replace them with my own after the lab):
+
+`01-playbook.yaml`: `ping localhost` → `ok`, recap `ok=2 changed=0 failed=0`
+
+![ansible-playbook 01-playbook.yaml output](images/example-01-playbook-run.png)
+
+`git pull` to get the new `02-playbook.yaml`, then run it: the `debug` module prints `msg`
+
+![git pull then ansible-playbook 02-playbook.yaml output](images/example-02-playbook-run.png)
 
 ## Ansible as a programming language
 
