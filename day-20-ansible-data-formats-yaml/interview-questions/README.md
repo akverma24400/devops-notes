@@ -55,3 +55,15 @@ To print a message or a variable's value during a playbook run, like `echo` in s
 **13. Can one playbook have more than one play? Why?**
 
 Yes, a multi-play playbook: a list of plays, each with its own `hosts` and `tasks`, run top to bottom. It lets one file configure different groups in order, e.g. database, then backend, then frontend.
+
+**14. `package` module vs `dnf` module?**
+
+`dnf` works only on RHEL-family servers. `package` uses whatever package manager the server has (`dnf`, `yum`, `apt`), so the same playbook works on any distro.
+
+**15. In the `service` module, what is the difference between `state: started` and `enabled: yes`?**
+
+`state: started` starts the service now (`systemctl start`). `enabled: yes` makes it start on boot (`systemctl enable`).
+
+**16. What does `become: yes` do?**
+
+Runs the tasks as root (sudo). Needed for installing packages and managing services. It is the playbook version of `-b` in ad-hoc commands.

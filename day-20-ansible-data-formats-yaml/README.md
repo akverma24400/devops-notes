@@ -24,10 +24,11 @@
    - [03-multi-play.yaml: many plays in one playbook](#03-multi-playyaml-many-plays-in-one-playbook)
    - [Run a playbook](#run-a-playbook)
 8. [Create the frontend server (managed node)](#create-the-frontend-server-managed-node)
-9. [Ansible as a programming language](#ansible-as-a-programming-language)
-10. [Variables](#variables)
-11. [What I learned](#what-i-learned)
-12. [Interview Questions](#interview-questions)
+9. [04-nginx.yaml: install and start nginx on the frontend](#04-nginxyaml-install-and-start-nginx-on-the-frontend)
+10. [Ansible as a programming language](#ansible-as-a-programming-language)
+11. [Variables](#variables)
+12. [What I learned](#what-i-learned)
+13. [Interview Questions](#interview-questions)
 
 ---
 
@@ -594,6 +595,75 @@ ansible-server ── ssh (port 22, private IP) ──► roboshop-frontend
 
 > Both servers use the `roboshop-common` security group, so **port 22** must be allowed there for the Ansible server to reach the frontend.
 
+## 04-nginx.yaml: install and start nginx on the frontend
+
+**Definition:** **`04-nginx.yaml`** = a playbook that **installs** nginx and **starts** it on every server in the `[frontend]` group.
+
+**Step 1: add the frontend IP to the inventory.** After the frontend server is created, put its **private IP** under `[frontend]` in `inventory.ini`:
+
+```ini
+[frontend]
+<frontend-private-ip>      ; e.g. 172.31.20.30
+```
+
+**Step 2: write the playbook.**
+
+```yaml
+- name: install and start nginx
+  hosts: frontend
+  become: yes # providing sudo access
+  tasks:
+  - name: install nginx
+    package:
+      name: nginx
+      state: present
+
+  - name: start nginx
+    service:
+      name: nginx
+      state: started
+      enabled: yes
+```
+
+| Line | Means |
+|---|---|
+| `- name: install and start nginx` | the play's name |
+| `hosts: frontend` | run on the `[frontend]` group from `inventory.ini` (the frontend server's IP) |
+| *(no `connection: local`)* | so Ansible connects over **SSH** to the frontend server |
+| `become: yes` | run tasks as **root** (sudo); installing packages needs root. Same as `-b` in ad-hoc |
+| `package:` | module that installs a package with the server's package manager (`dnf` on RHEL, `apt` on Ubuntu), so it works on **any distro** |
+| `name: nginx` + `state: present` | nginx should be **installed** (`present` = `installed`) |
+| `service:` | module that manages services (like `systemctl`) |
+| `state: started` | nginx should be **running** (`systemctl start nginx`) |
+| `enabled: yes` | nginx should **start on boot** (`systemctl enable nginx`) |
+
+**Same as Linux commands:**
+
+| Task | Linux command | Ansible |
+|---|---|---|
+| install nginx | `sudo dnf install nginx -y` | `package: name=nginx state=present` |
+| start nginx | `sudo systemctl start nginx` | `service: state=started` |
+| start on boot | `sudo systemctl enable nginx` | `service: enabled=yes` |
+
+**Step 3: run it from the Ansible server.** The playbook has no username/password, so we pass them with `-e`:
+
+```bash
+ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 04-nginx.yaml
+```
+
+**Expected output:**
+
+| Run | Result | Why |
+|---|---|---|
+| 1st run | `changed` for both tasks | nginx installed and started |
+| 2nd run | `ok`, `changed=0` | already installed and running → **idempotent**, nothing to do |
+
+**Step 4: check it.** Open `http://<frontend-public-ip>` in the browser → the **nginx welcome page** (port 80 must be allowed in the security group).
+
+```
+inventory.ini [frontend] ──► ansible-playbook 04-nginx.yaml ──ssh──► frontend: nginx installed + started
+```
+
 ## Ansible as a programming language
 
 **Definition:** Ansible playbooks also have the **basic building blocks of a programming language**, like shell scripting did:
@@ -654,6 +724,7 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 - Check YAML at **yamlchecker.com**.
 - Ansible server: `sudo dnf install ansible -y` → `git clone` the code → `ansible-inventory -i inventory.ini --graph` shows `@all`, `@ungrouped`, `@roboshop`... as a tree.
 - First playbooks: a play = `name` + `hosts` + `tasks`; `hosts: local` + `connection: local` = run on the Ansible server itself, no SSH. `ping` module → pong, `debug` module → prints `msg`. Run with `ansible-playbook -i inventory.ini <file>.yaml`.
+- Added the frontend IP under `[frontend]` and ran `04-nginx.yaml`: `become: yes` (root), `package` (install, any distro), `service` (`started` + `enabled`).
 - Ansible has variables, data types, conditions, loops, functions, error handling. Started with **variables**: `vars:` + `{{ name }}`.
 
 ```
