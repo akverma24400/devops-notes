@@ -50,7 +50,7 @@ plain server ──(configuration: Ansible)──► ready server ──(+ code)
 
 **Definition:** **`aws ec2 run-instances`** = AWS CLI command that **creates** (launches) an EC2 instance.
 
-First we create the **Ansible server** (control node), where Ansible will be installed.
+First we create the **Ansible server** (control node), where Ansible will be installed. We **attach the `roboshop-common` security group** to it (`--security-groups "roboshop-common"`).
 
 ```bash
 aws ec2 run-instances \
@@ -66,7 +66,7 @@ aws ec2 run-instances \
 |---|---|
 | `--image-id ami-...` | which **AMI** (OS image) to use |
 | `--instance-type t3.micro` | size of the server (CPU/RAM) |
-| `--security-groups "roboshop-common"` | security group (firewall) **by name** |
+| `--security-groups "roboshop-common"` | attach the **`roboshop-common`** security group (firewall) **by name** |
 | `--tag-specifications ... Value=ansible-server` | gives the server the **Name** tag `ansible-server` |
 | `--query 'Instances[0].InstanceId'` | from the big JSON output, pick only the **instance ID** of the first instance |
 | `--output text` | print it as plain text (no JSON) |
@@ -594,7 +594,7 @@ ansible-server ── ssh (port 22, private IP) ──► roboshop-frontend
  (control node)                                   (managed node)
 ```
 
-> Both servers use the `roboshop-common` security group, so **port 22** must be allowed there for the Ansible server to reach the frontend.
+> **Attach `roboshop-common` SG to both servers** (Ansible server and frontend). Port **22** must be allowed in it, so the Ansible server can SSH to the frontend.
 
 ## 04-nginx.yaml: install and start nginx on the frontend
 
@@ -686,6 +686,10 @@ Ansible checks the target machine's OS   (Gathering Facts)
 ```bash
 ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 04-nginx.yaml
 ```
+
+**Example** (class screenshot, password hidden; I'll replace it with my own after the lab): `git pull` gets the new `04-nginx.yaml`, then the run starts: `Gathering Facts` → `ok: [172.31.20.30]` (the frontend IP from the inventory), then `TASK [install nginx]`:
+
+![ansible-playbook 04-nginx.yaml run on the frontend](images/example-04-nginx-playbook-run.png)
 
 **Expected output:**
 
