@@ -28,6 +28,13 @@
    - [How the `package` module decides: dnf or apt?](#how-the-package-module-decides-dnf-or-apt)
 10. [Ansible as a programming language](#ansible-as-a-programming-language)
 11. [Variables](#variables)
+   - [1. Play-level variables](#1-play-level-variables-05-variablesyaml)
+   - [2. Task-level variables](#2-task-level-variables-06-variablesyaml)
+   - [3. Variables from a file](#3-variables-from-a-file-07-variablesyaml)
+   - [4. Variables from a prompt](#4-variables-from-a-prompt-08-variablesyaml)
+   - [5. Variables from the inventory](#5-variables-from-the-inventory-09-variablesyaml)
+   - [6. Variables from the command line](#6-variables-from-the-command-line-10-variablesyaml)
+   - [Variable preference](#variable-preference-11-vars-preferenceyaml)
 12. [What I learned](#what-i-learned)
 13. [Interview Questions](#interview-questions)
 
@@ -783,16 +790,31 @@ browser ─────────────── http (port 80, allowed in 
 
 ## Variables
 
-**Definition:** **Variable** = a **name** that stores a **value**, so we write the value once and use it in many places.
+**Definition:** **Variable** = a **name** that stores a **value**, so we write the value once and use it in many places. In Ansible we use it with **`{{ name }}`**.
 
-In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
+**6 places to define variables in Ansible:**
+
+| # | Where | Keyword | File |
+|---|---|---|---|
+| 1 | in the **play** | `vars:` | `05-variables.yaml` |
+| 2 | in the **task** | `vars:` under a task | `06-variables.yaml` |
+| 3 | in a **separate file** | `vars_files:` | `07-variables.yaml` + `course.yaml` |
+| 4 | **prompt** (ask the user at run time) | `vars_prompt:` | `08-variables.yaml` |
+| 5 | in the **inventory** | `[group:vars]` | `09-variables.yaml` + `inventory.ini` |
+| 6 | from the **command line** | `-e "name=value"` | `10-variables.yaml` |
+
+> All the screenshots below are **class examples**; I'll replace them with my own after the lab.
+
+### 1. Play-level variables (05-variables.yaml)
+
+**Definition:** **Play-level variables** = variables under `vars:` in the **play**; every task in that play can use them.
 
 ```yaml
 - name: demo on variables
   hosts: local
-  connection: local        # run on the Ansible server itself, no SSH
+  connection: local
   vars:
-    course: ansible
+    course: "ansible"
     trainer: Sivakumar Reddy M
     duration: 10 hrs
   tasks:
@@ -803,16 +825,251 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 
 | Part | Means |
 |---|---|
-| `vars:` | define variables (a **map**: name: value) |
+| `vars:` | define variables (a **map**: `name: value`) |
 | `{{ course }}` | use the variable's value |
-| `debug` module | prints a message (like `echo`) |
+| `debug` + `msg` | print the message |
+
+Output: `Hi, I am learning ansible from Sivakumar Reddy M, duration is 10 hrs`
+
+![05-variables.yaml run](images/example-vars-05-play-vars.png)
 
 | Shell | Ansible |
 |---|---|
 | `COURSE="ansible"` | `course: ansible` under `vars:` |
 | `echo "$COURSE"` | `msg: "{{ course }}"` |
 
-> Code for this course: [ansible-code](https://github.com/Abhignadumpala/ansible-code) (`05-variables.yaml` and onwards).
+### 2. Task-level variables (06-variables.yaml)
+
+**Definition:** **Task-level variables** = variables under `vars:` **inside one task**; they work only for that task and **win over** play-level variables with the same name.
+
+```yaml
+- name: demo on task level variables
+  hosts: local
+  connection: local
+  vars:
+    property: "100acres"          # play level
+  tasks:
+  - name: print the vars
+    debug:
+      msg: "Hi, I got {{ property }} from my father"
+
+  - name: print the vars again
+    vars:
+      property: "10acres"         # task level
+    debug:
+      msg: "Hi, I got {{ property }} from my father"
+```
+
+| Task | `property` used | Why |
+|---|---|---|
+| print the vars | `100acres` | no task variable → uses the **play** variable |
+| print the vars again | `10acres` | task has its own `property` → **task level has priority** |
+
+![06-variables.yaml run](images/example-vars-06-task-vars.png)
+
+### 3. Variables from a file (07-variables.yaml)
+
+**Definition:** **`vars_files`** = load variables from a **separate YAML file**. Ansible reads the file, loads the data, and the playbook can use it.
+
+`course.yaml` (only variables, `key: value`):
+
+```yaml
+course: ansible from file
+trainer: Sivakumar Reddy M
+duration: 10 hrs
+```
+
+`07-variables.yaml`:
+
+```yaml
+- name: variables from files
+  hosts: local
+  connection: local
+  vars_files:
+  - course.yaml                   # list of files to load
+  tasks:
+  - name: print course information
+    debug:
+      msg: "Hi, I am learning {{ course }} from {{ trainer }}, duration is {{ duration }}"
+```
+
+**Why a separate file?**
+- keep the variables **away from the code**: change values without touching the playbook
+- many playbooks can use the **same** variables file
+
+![07-variables.yaml run](images/example-vars-07-vars-files.png)
+
+### 4. Variables from a prompt (08-variables.yaml)
+
+**Definition:** **`vars_prompt`** = Ansible **asks the user** to type the value when the playbook runs. Used for **dynamic** or **confidential** values (username, password) that we don't want to keep in files.
+
+```yaml
+- name: variables from prompt
+  hosts: local
+  connection: local
+  vars_prompt:
+  - name: username
+    prompt: Please enter your username
+    private: false                # shows what you type
+
+  - name: password
+    prompt: Please enter your password
+    private: true                 # hides what you type
+  tasks:
+  - name: print the confidential information
+    debug:
+      msg: "username is: {{ username }}, password is {{ password }}"
+```
+
+| Key | Means |
+|---|---|
+| `name: username` | the variable name |
+| `prompt:` | the question shown on screen |
+| `private: false` | you **see** what you type (fine for a username) |
+| `private: true` | what you type is **hidden** on screen (for a password) |
+
+> ⚠️ Here we **print** the password only **for testing**, to see the variable works. In real projects **never print confidential information**.
+
+![08-variables.yaml run: username visible, password hidden while typing](images/example-vars-08-vars-prompt.png)
+
+### 5. Variables from the inventory (09-variables.yaml)
+
+**Definition:** **Inventory variables** = variables written in `inventory.ini` under **`[group:vars]`**; every server in that group gets them. Ansible loads them automatically.
+
+`inventory.ini`:
+
+```ini
+[frontend]
+172.31.20.30
+
+[frontend:vars]
+course=ansible
+trainer=Sivakumar Reddy M
+duration=10 hrs
+```
+
+`09-variables.yaml` (no `vars:` in the playbook):
+
+```yaml
+- name: variables from inventory
+  hosts: frontend
+  tasks:
+  - name: print the variables
+    debug:
+      msg: "Hi, I am learning {{ course }} from {{ trainer }}, duration is {{ duration }}"
+```
+
+```bash
+ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 09-variables.yaml
+```
+
+- `hosts: frontend` → runs on the frontend server (over SSH, so user/password are needed)
+- the values come from `[frontend:vars]`
+
+![inventory.ini with frontend:vars](images/example-vars-09-inventory-frontend-vars.png)
+
+![09-variables.yaml run (password hidden)](images/example-vars-09-inventory-vars-run.png)
+
+### 6. Variables from the command line (10-variables.yaml)
+
+**Definition:** **Extra vars (`-e`)** = pass a variable **when running** the playbook: `-e "name=value"`.
+
+```yaml
+- name: print greeting
+  hosts: local
+  connection: local
+  tasks:
+  - name: print greeting
+    debug:
+      msg: "Hello {{ person_name }}"
+```
+
+`person_name` is **not defined anywhere**:
+
+| Run | Result |
+|---|---|
+| `ansible-playbook -i inventory.ini 10-variables.yaml` | ❌ `FAILED! ... 'person_name' is undefined` |
+| `ansible-playbook -i inventory.ini 10-variables.yaml -e "person_name=Sivakumar"` | ✅ `Hello Sivakumar` |
+
+![10-variables.yaml: undefined error, then passed with -e](images/example-vars-10-undefined-then-cli.png)
+
+> **Undefined variable = error.** Every `{{ variable }}` must be defined somewhere (play, task, file, prompt, inventory or `-e`).
+
+### Variable preference (11-vars-preference.yaml)
+
+**Definition:** **Variable preference (precedence)** = when the **same variable name** is defined in many places, Ansible uses a fixed **order** to decide which value wins.
+
+`11-vars-preference.yaml`: `course` is defined in **every** place:
+
+```yaml
+- name: variables from files
+  hosts: local
+  connection: local
+  vars:
+    course: "ansible from PLAY"
+  vars_prompt:
+  - name: course
+    prompt: Please enter your course
+    private: false
+  vars_files:
+  - course.yaml                   # course: ansible from file
+  tasks:
+  - name: print course information
+    vars:
+      course: "ansible from task"
+    debug:
+      msg: "Hi, I am learning {{ course }}"
+```
+
++ `inventory.ini`: `[local:vars]` → `course=ansible from inventory`
+
+**Preference order (1 = highest, wins):**
+
+| # | Where | Example value |
+|---|---|---|
+| 1 | **Command line** `-e` | `ansible from cmd` |
+| 2 | **Task** `vars:` | `ansible from task` |
+| 3 | **File** `vars_files:` | `ansible from file` |
+| 4 | **Prompt** `vars_prompt:` | `ansible from prompt` |
+| 5 | **Play** `vars:` | `ansible from PLAY` |
+| 6 | **Inventory** `[group:vars]` | `ansible from inventory` |
+
+```
+CMD  >  task  >  file  >  prompt  >  PLAY  >  inventory
+(wins)                                       (lowest)
+```
+
+**How to test it (remove the winner each time, the next one wins).** Steps 1–3 were shown in class; 4–6 continue the same way:
+
+| Step | What we did | Output |
+|---|---|---|
+| 1 | run with `-e "course='ansible from cmd'"` | `ansible from cmd` → **CMD wins** (1st), prompt is skipped |
+| 2 | run without `-e`, type `ansible from prompt` | `ansible from task` → **task wins** (2nd) over prompt |
+| 3 | comment out the task `vars:` | `ansible from file` → **file** (3rd) |
+| 4 | comment out `course` in `course.yaml` | `ansible from prompt` → **prompt** (4th) |
+| 5 | remove the prompt | `ansible from PLAY` → **play** (5th) |
+| 6 | remove play `vars:` | `ansible from inventory` → **inventory** (6th) |
+
+> **Command line is always 1st preference**, in almost any programming language or tool: what you pass at run time overrides everything.
+
+![inventory.ini with local:vars](images/example-vars-11-inventory-local-vars.png)
+
+![CMD wins, then without -e the task wins over the prompt](images/example-vars-11-cmd-then-task.png)
+
+![task vars commented out](images/example-vars-11-task-commented.png)
+
+![course.yaml: course from file](images/example-vars-11-course-file.png)
+
+#### ⚠️ Spaces in `-e` values need inner quotes
+
+| Command | Output | Why |
+|---|---|---|
+| `-e "course=ansible from cmd"` | `Hi, I am learning ansible` ❌ | `-e "key=value"` splits on **spaces** → `course=ansible` only |
+| `-e "course='ansible from cmd'"` | `Hi, I am learning ansible from cmd` ✅ | inner `'...'` keeps the spaces in one value |
+
+![-e without inner quotes: only "ansible"](images/example-vars-11-cli-quotes-wrong.png)
+
+![-e with inner quotes: "ansible from cmd"](images/example-vars-11-cli-quotes-right.png)
 
 ## What I learned
 
@@ -829,7 +1086,8 @@ In a playbook, variables go under `vars:` and are used with **`{{ name }}`**:
 - Ansible server: `sudo dnf install ansible -y` → `git clone` the code → `ansible-inventory -i inventory.ini --graph` shows `@all`, `@ungrouped`, `@roboshop`... as a tree.
 - First playbooks: a play = `name` + `hosts` + `tasks`; `hosts: local` + `connection: local` = run on the Ansible server itself, no SSH. `ping` module → pong, `debug` module → prints `msg`. Run with `ansible-playbook -i inventory.ini <file>.yaml`.
 - Added the frontend IP under `[frontend]` and ran `04-nginx.yaml`: `become: yes` (root), `package` (install, any distro), `service` (`started` + `enabled`).
-- Ansible has variables, data types, conditions, loops, functions, error handling. Started with **variables**: `vars:` + `{{ name }}`.
+- Ansible has variables, data types, conditions, loops, functions, error handling. **Variables** can be defined in 6 places: play `vars`, task `vars`, `vars_files`, `vars_prompt` (`private: true` hides input), inventory `[group:vars]`, and `-e` on the command line. Undefined variable = error.
+- **Preference** when the same name is everywhere: **CMD > task > file > prompt > PLAY > inventory**. Use inner quotes for spaces: `-e "course='ansible from cmd'"`.
 
 ```
 AWS CLI ──► server created ──► inventory (which machines)

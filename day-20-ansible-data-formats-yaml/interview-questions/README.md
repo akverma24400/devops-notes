@@ -2,6 +2,12 @@
 
 [← Back to Day 20 notes](../README.md)
 
+## ⭐ Very Important (asked in class)
+
+**1. If the same variable name is defined in many places, which value does Ansible use?**
+
+Ansible follows a preference (precedence) order. From highest to lowest: **command line `-e`** > **task `vars`** > **`vars_files`** > **`vars_prompt`** > **play `vars`** > **inventory `[group:vars]`**. The command line always wins, so a value passed at run time overrides everything.
+
 ## Other Questions
 
 **1. What two things are needed to run an application on a server?**
@@ -71,3 +77,19 @@ Runs the tasks as root (sudo). Needed for installing packages and managing servi
 **17. nginx is running but the browser times out. What do you check?**
 
 The security group: port 80 must be allowed inbound (e.g. `0.0.0.0/0` for public HTTP). A timeout usually means the firewall/SG drops the traffic; "connection refused" means the port is reachable but nothing is listening (nginx not running).
+
+**18. In how many ways can you define variables in Ansible?**
+
+Play `vars:`, task `vars:`, `vars_files:` (separate file), `vars_prompt:` (ask at run time), inventory `[group:vars]`, and `-e` on the command line.
+
+**19. How do you take a password as input without showing it on screen?**
+
+`vars_prompt` with `private: true`. Never print it with `debug` in real projects.
+
+**20. What happens if a playbook uses a variable that is not defined?**
+
+The task fails: `'person_name' is undefined`. Define it somewhere or pass it with `-e "person_name=value"`.
+
+**21. Why does `-e "course=ansible from cmd"` give only `ansible`?**
+
+`-e` with `key=value` splits on spaces. Use inner quotes: `-e "course='ansible from cmd'"`.
