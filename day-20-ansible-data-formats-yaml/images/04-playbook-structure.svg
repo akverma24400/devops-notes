@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="470" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Playbook → Play → Tasks → Modules</text>
+
+  <!-- code -->
+  <rect x="30" y="60" width="440" height="330" rx="10" fill="#f8f9fa" stroke="#dadce0"/>
+  <text x="46" y="84" font-size="13" font-weight="700" fill="#5f6368">04-nginx.yaml</text>
+  <rect x="38" y="95" width="424" height="90" rx="4" fill="#e8f0fe"/>
+  <rect x="38" y="187" width="424" height="90" rx="4" fill="#e6f4ea"/>
+  <rect x="38" y="279" width="424" height="90" rx="4" fill="#fef7e0"/>
+  <g font-family="Consolas, Menlo, monospace" font-size="15" fill="#202124">
+    <text x="50" y="115">- name: install and start nginx</text>
+    <text x="68" y="137">hosts: frontend</text>
+    <text x="68" y="159">become: yes</text>
+    <text x="68" y="181">tasks:</text>
+    <text x="68" y="207">- name: install nginx</text>
+    <text x="86" y="229"><tspan font-weight="700" fill="#0d652d">package:</tspan></text>
+    <text x="104" y="251">name: nginx</text>
+    <text x="104" y="273">state: present</text>
+    <text x="68" y="299">- name: start nginx</text>
+    <text x="86" y="321"><tspan font-weight="700" fill="#b06000">service:</tspan></text>
+    <text x="104" y="343">name: nginx</text>
+    <text x="104" y="365">state: started</text>
+  </g>
+
+  <!-- boxes -->
+  <rect x="500" y="60" width="430" height="330" rx="10" fill="#ffffff" stroke="#5f6368" stroke-width="2"/>
+  <text x="516" y="86" font-size="15" font-weight="700" fill="#202124">Playbook <tspan font-weight="400" fill="#3c4043">= the YAML file (a list of plays)</tspan></text>
+  <rect x="516" y="100" width="398" height="274" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="532" y="126" font-size="15" font-weight="700" fill="#174ea6">Play</text>
+  <text x="532" y="148" font-size="13" fill="#202124"><tspan font-weight="700">hosts</tspan> = WHICH servers (a group from the inventory)</text>
+  <text x="532" y="168" font-size="13" fill="#202124"><tspan font-weight="700">become: yes</tspan> = run as root (sudo)</text>
+  <rect x="532" y="185" width="366" height="80" rx="8" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+  <text x="548" y="210" font-size="15" font-weight="700" fill="#0d652d">Task 1 <tspan font-weight="400" fill="#202124">= one step, with a name</tspan></text>
+  <text x="548" y="240" font-size="14" fill="#202124">module <tspan font-weight="700" font-family="Consolas, Menlo, monospace">package</tspan> → install nginx</text>
+  <rect x="532" y="277" width="366" height="80" rx="8" fill="#fef7e0" stroke="#f9ab00" stroke-width="2"/>
+  <text x="548" y="302" font-size="15" font-weight="700" fill="#b06000">Task 2 <tspan font-weight="400" fill="#202124">= next step</tspan></text>
+  <text x="548" y="332" font-size="14" fill="#202124">module <tspan font-weight="700" font-family="Consolas, Menlo, monospace">service</tspan> → start nginx</text>
+
+  <g font-size="14" fill="#3c4043">
+    <text x="30" y="422">Tasks run <tspan font-weight="700" fill="#202124">top to bottom</tspan>, on every server in <tspan font-family="Consolas, Menlo, monospace">hosts</tspan>. Each task uses <tspan font-weight="700" fill="#202124">one module</tspan>.</text>
+    <text x="30" y="446">Indentation shows what is inside what: <tspan font-family="Consolas, Menlo, monospace">-</tspan> at the left edge = a play, <tspan font-family="Consolas, Menlo, monospace">-</tspan> under <tspan font-family="Consolas, Menlo, monospace">tasks:</tspan> = a task.</text>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="400" viewBox="0 0 960 400" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="400" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Same variable in many places? The higher one wins</text>
+  <g font-size="15">
+    <rect x="110" y="60" width="800" height="40" rx="8" fill="#174ea6"/>
+    <text x="126" y="86" fill="#ffffff"><tspan font-weight="700">1.  Command line</tspan> —  -e "course=..."</text>
+    <rect x="110" y="110" width="720" height="40" rx="8" fill="#1a73e8"/>
+    <text x="126" y="136" fill="#ffffff"><tspan font-weight="700">2.  Task</tspan> —  vars: inside one task</text>
+    <rect x="110" y="160" width="640" height="40" rx="8" fill="#4285f4"/>
+    <text x="126" y="186" fill="#ffffff"><tspan font-weight="700">3.  File</tspan> —  vars_files: course.yaml</text>
+    <rect x="110" y="210" width="560" height="40" rx="8" fill="#8ab4f8"/>
+    <text x="126" y="236" fill="#202124"><tspan font-weight="700">4.  Prompt</tspan> —  vars_prompt: (asks at run time)</text>
+    <rect x="110" y="260" width="480" height="40" rx="8" fill="#aecbfa"/>
+    <text x="126" y="286" fill="#202124"><tspan font-weight="700">5.  Play</tspan> —  vars: in the play</text>
+    <rect x="110" y="310" width="400" height="40" rx="8" fill="#d2e3fc"/>
+    <text x="126" y="336" fill="#202124"><tspan font-weight="700">6.  Inventory</tspan> —  [group:vars]</text>
+  </g>
+  <g font-size="14" font-weight="700" text-anchor="middle">
+    <text x="60" y="86" fill="#174ea6">WINS</text>
+    <text x="60" y="336" fill="#5f6368">lowest</text>
+  </g>
+  <line x1="60" y1="300" x2="60" y2="104" stroke="#5f6368" stroke-width="2"/>
+  <path d="M52,112 L60,98 L68,112 z" fill="#5f6368"/>
+  <text x="480" y="382" text-anchor="middle" font-size="14" fill="#3c4043">What you type on the command line always wins over everything written in files.</text>
+</svg>

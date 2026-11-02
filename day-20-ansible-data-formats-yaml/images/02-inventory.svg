@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="470" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Inventory: the list of servers, put into groups</text>
+
+  <rect x="30" y="60" width="330" height="355" rx="10" fill="#f8f9fa" stroke="#dadce0"/>
+  <text x="46" y="84" font-size="13" font-weight="700" fill="#5f6368">inventory.ini</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="15" fill="#202124">
+    <text x="46" y="112" font-weight="700" fill="#1a73e8">[frontend]</text>
+    <text x="46" y="134">172.31.20.30</text>
+    <text x="46" y="166" font-weight="700" fill="#1a73e8">[backend]</text>
+    <text x="46" y="188">172.31.20.50</text>
+    <text x="46" y="210">172.31.20.51</text>
+    <text x="46" y="242" font-weight="700" fill="#1a73e8">[database]</text>
+    <text x="46" y="264">172.31.20.45</text>
+    <text x="46" y="296" font-weight="700" fill="#9334e6">[roboshop:children]</text>
+    <text x="46" y="318">frontend</text>
+    <text x="46" y="340">backend</text>
+    <text x="46" y="362">database</text>
+    <text x="46" y="398" fill="#5f6368">; [group] = a group of servers</text>
+  </g>
+
+  <!-- tree -->
+  <g stroke="#9aa0a6" stroke-width="2">
+    <line x1="685" y1="110" x2="685" y2="150"/>
+    <line x1="685" y1="190" x2="685" y2="215"/>
+    <line x1="520" y1="215" x2="850" y2="215"/>
+    <line x1="520" y1="215" x2="520" y2="240"/>
+    <line x1="685" y1="215" x2="685" y2="240"/>
+    <line x1="850" y1="215" x2="850" y2="240"/>
+  </g>
+  <rect x="615" y="70" width="140" height="40" rx="8" fill="#f1f3f4" stroke="#5f6368" stroke-width="2"/>
+  <text x="685" y="96" text-anchor="middle" font-size="16" font-weight="700" fill="#202124">all</text>
+  <rect x="575" y="150" width="220" height="40" rx="8" fill="#f3e8fd" stroke="#9334e6" stroke-width="2"/>
+  <text x="685" y="176" text-anchor="middle" font-size="15" font-weight="700" fill="#681da8">roboshop (group of groups)</text>
+  <g font-size="15" font-weight="700" fill="#174ea6" text-anchor="middle">
+    <rect x="450" y="240" width="140" height="40" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text x="520" y="266">frontend</text>
+    <rect x="615" y="240" width="140" height="40" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text x="685" y="266">backend</text>
+    <rect x="780" y="240" width="140" height="40" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text x="850" y="266">database</text>
+  </g>
+  <g font-family="Consolas, Menlo, monospace" font-size="13" fill="#3c4043" text-anchor="middle">
+    <text x="520" y="302">172.31.20.30</text>
+    <text x="685" y="302">172.31.20.50</text>
+    <text x="685" y="320">172.31.20.51</text>
+    <text x="850" y="302">172.31.20.45</text>
+  </g>
+
+  <rect x="400" y="345" width="530" height="102" rx="10" fill="#fef7e0" stroke="#f9ab00"/>
+  <text x="416" y="368" font-size="14" font-weight="700" fill="#202124">Pick the target by group name:</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="13" fill="#202124">
+    <text x="416" y="392">ansible frontend -m ping</text><text x="640" y="392">→ 1 server</text>
+    <text x="416" y="414">ansible roboshop -m ping</text><text x="640" y="414">→ all 4 RoboShop servers</text>
+    <text x="416" y="436">ansible all -m ping</text><text x="640" y="436">→ every server in the file</text>
+  </g>
+</svg>

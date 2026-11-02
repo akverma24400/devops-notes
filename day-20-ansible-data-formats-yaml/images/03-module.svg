@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3c4043"/></marker>
+  </defs>
+  <rect width="960" height="470" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Module: you say WHAT you want, Ansible works out HOW</text>
+
+  <rect x="30" y="65" width="250" height="180" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="155" y="92" text-anchor="middle" font-size="15" font-weight="700" fill="#174ea6">1. You write</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="15" fill="#202124">
+    <text x="55" y="135">package:</text>
+    <text x="73" y="160">name: nginx</text>
+    <text x="73" y="185">state: present</text>
+  </g>
+  <text x="155" y="225" text-anchor="middle" font-size="13" fill="#3c4043">"nginx must be installed"</text>
+
+  <line x1="282" y1="155" x2="326" y2="155" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="330" y="65" width="300" height="180" rx="10" fill="#f3e8fd" stroke="#9334e6" stroke-width="2"/>
+  <text x="480" y="92" text-anchor="middle" font-size="15" font-weight="700" fill="#681da8">2. Ansible checks on the server</text>
+  <g font-size="14" fill="#202124">
+    <text x="348" y="128">Which OS is it?</text>
+    <text x="364" y="150">Amazon Linux / RHEL → <tspan font-weight="700">dnf</tspan></text>
+    <text x="364" y="172">Ubuntu / Debian → <tspan font-weight="700">apt</tspan></text>
+    <text x="348" y="206">Is nginx already installed?</text>
+  </g>
+
+  <line x1="632" y1="130" x2="676" y2="105" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="632" y1="180" x2="676" y2="205" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="680" y="65" width="250" height="80" rx="10" fill="#fef7e0" stroke="#f9ab00" stroke-width="2"/>
+  <text x="696" y="92" font-size="14" font-weight="700" fill="#202124">No → installs it</text>
+  <text x="696" y="122" font-size="15" font-weight="700" fill="#b06000">changed</text>
+  <rect x="680" y="165" width="250" height="80" rx="10" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+  <text x="696" y="192" font-size="14" font-weight="700" fill="#202124">Yes → does nothing</text>
+  <text x="696" y="222" font-size="15" font-weight="700" fill="#188038">ok</text>
+
+  <text x="480" y="278" text-anchor="middle" font-size="14" fill="#3c4043">Run it 10 times → same result, nothing breaks. This is called <tspan font-weight="700" fill="#202124">idempotent</tspan>.</text>
+
+  <!-- common modules -->
+  <rect x="30" y="298" width="900" height="152" rx="10" fill="#f8f9fa" stroke="#dadce0"/>
+  <text x="50" y="324" font-size="15" font-weight="700" fill="#202124">Common modules and the Linux command they replace</text>
+  <g font-size="14" fill="#202124">
+    <g font-family="Consolas, Menlo, monospace" font-weight="700" fill="#174ea6">
+      <text x="50" y="354">ping</text><text x="50" y="378">debug</text><text x="50" y="402">package</text><text x="50" y="426">service</text>
+      <text x="490" y="354">command</text><text x="490" y="378">shell</text><text x="490" y="402">copy</text><text x="490" y="426">user</text>
+    </g>
+    <text x="140" y="354">check Ansible can log in (not ICMP ping)</text>
+    <text x="140" y="378">print a message (like echo)</text>
+    <text x="140" y="402">install software (dnf / apt)</text>
+    <text x="140" y="426">start / enable a service (systemctl)</text>
+    <text x="580" y="354">run a simple command</text>
+    <text x="580" y="378">run a command with pipes |, &gt;</text>
+    <text x="580" y="402">copy a file to the server (scp)</text>
+    <text x="580" y="426">create a user (useradd)</text>
+  </g>
+</svg>

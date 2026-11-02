@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3c4043"/></marker>
+  </defs>
+  <rect width="960" height="540" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">How Ansible works: one control node, many managed nodes</text>
+
+  <!-- control node -->
+  <rect x="30" y="60" width="340" height="250" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="200" y="90" text-anchor="middle" font-size="17" font-weight="700" fill="#174ea6">Control node (Ansible server)</text>
+  <text x="200" y="110" text-anchor="middle" font-size="13" fill="#3c4043">Ansible is installed only here</text>
+  <g font-size="14" fill="#202124">
+    <rect x="50" y="125" width="300" height="34" rx="6" fill="#ffffff" stroke="#8ab4f8"/>
+    <text x="62" y="147"><tspan font-weight="700">inventory.ini</tspan>  →  WHICH servers</text>
+    <rect x="50" y="167" width="300" height="34" rx="6" fill="#ffffff" stroke="#8ab4f8"/>
+    <text x="62" y="189"><tspan font-weight="700">playbook.yaml</tspan>  →  WHAT to do</text>
+    <rect x="50" y="209" width="300" height="34" rx="6" fill="#ffffff" stroke="#8ab4f8"/>
+    <text x="62" y="231"><tspan font-weight="700">ansible.cfg</tspan>  →  default settings</text>
+    <rect x="50" y="251" width="300" height="34" rx="6" fill="#ffffff" stroke="#8ab4f8"/>
+    <text x="62" y="273"><tspan font-weight="700">SSH key / password</tspan>  →  HOW to log in</text>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#3c4043" stroke-width="2" fill="none">
+    <line x1="372" y1="185" x2="596" y2="97" marker-end="url(#a)"/>
+    <line x1="372" y1="185" x2="596" y2="185" marker-end="url(#a)"/>
+    <line x1="372" y1="185" x2="596" y2="273" marker-end="url(#a)"/>
+  </g>
+  <rect x="425" y="160" width="120" height="24" rx="12" fill="#fce8e6"/>
+  <text x="485" y="177" text-anchor="middle" font-size="13" font-weight="700" fill="#a50e0e">SSH · port 22</text>
+
+  <!-- managed nodes -->
+  <g>
+    <rect x="600" y="62" width="330" height="70" rx="10" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+    <text x="616" y="91" font-size="16" font-weight="700" fill="#0d652d">Managed node 1 (frontend)</text>
+    <text x="616" y="115" font-size="13" fill="#3c4043">SSH server + Python · no Ansible needed</text>
+    <rect x="600" y="150" width="330" height="70" rx="10" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+    <text x="616" y="179" font-size="16" font-weight="700" fill="#0d652d">Managed node 2 (backend)</text>
+    <text x="616" y="203" font-size="13" fill="#3c4043">SSH server + Python · no Ansible needed</text>
+    <rect x="600" y="238" width="330" height="70" rx="10" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+    <text x="616" y="267" font-size="16" font-weight="700" fill="#0d652d">Managed node 3 (database)</text>
+    <text x="616" y="291" font-size="13" fill="#3c4043">SSH server + Python · no Ansible needed</text>
+  </g>
+
+  <!-- steps -->
+  <rect x="30" y="335" width="900" height="185" rx="10" fill="#f8f9fa" stroke="#dadce0"/>
+  <text x="50" y="364" font-size="16" font-weight="700" fill="#202124">What happens when you run a playbook</text>
+  <g font-size="14" fill="#202124">
+    <text x="50" y="392"><tspan font-weight="700" fill="#1a73e8">1</tspan>  Ansible reads the <tspan font-weight="700">inventory</tspan> → gets the list of servers.</text>
+    <text x="50" y="414"><tspan font-weight="700" fill="#1a73e8">2</tspan>  Reads the <tspan font-weight="700">playbook</tspan> → gets the list of tasks.</text>
+    <text x="50" y="436"><tspan font-weight="700" fill="#1a73e8">3</tspan>  Logs in to each server over <tspan font-weight="700">SSH (port 22)</tspan> with the key or password.</text>
+    <text x="50" y="458"><tspan font-weight="700" fill="#1a73e8">4</tspan>  Copies the <tspan font-weight="700">module</tspan> (a small Python program) to the server.</text>
+    <text x="50" y="480"><tspan font-weight="700" fill="#1a73e8">5</tspan>  Runs it with Python and gets the result back: <tspan font-weight="700" fill="#188038">ok</tspan> / <tspan font-weight="700" fill="#b06000">changed</tspan> / <tspan font-weight="700" fill="#a50e0e">failed</tspan>.</text>
+    <text x="50" y="502"><tspan font-weight="700" fill="#1a73e8">6</tspan>  Deletes the copied file. Nothing stays installed on the server → <tspan font-weight="700">agentless</tspan>.</text>
+  </g>
+</svg>
