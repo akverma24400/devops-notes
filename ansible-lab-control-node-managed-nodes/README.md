@@ -465,6 +465,26 @@ Save and quit: `Esc` → `:wq` → `Enter`.
 | `host_key_checking = False` | typing `yes` for new servers (OK for labs, keep it on in production) |
 | `interpreter_python = auto_silent` | still finds Python automatically, but hides the yellow warning |
 
+**How to find the key path for `private_key_file`:**
+
+SSH keys are kept in the `.ssh` folder inside your home folder. We copied our key there in Step 10. To get its full path:
+
+```bash
+ls -l ~/.ssh/
+```
+
+**What it does:** lists the keys in your `.ssh` folder.
+**Expected:** `ansible_lab` (our private key) and `authorized_keys`.
+
+```bash
+realpath ~/.ssh/ansible_lab
+```
+
+**What it does:** prints the full path of the key. Copy this into `private_key_file`.
+**Expected:** `/home/ec2-user/.ssh/ansible_lab`
+
+(`~` is just a short way of writing your home folder, `/home/ec2-user`.)
+
 ```bash
 cat ansible.cfg
 ```
