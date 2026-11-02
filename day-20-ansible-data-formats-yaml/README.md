@@ -50,7 +50,16 @@ In this class we learn the **basics of Ansible**: what it is, how it manages ser
 
 ## 1. What is Ansible?
 
-**Definition:** **Ansible** = a **configuration management** tool. It sets up servers automatically: installs packages, creates users and folders, starts services.
+**Definition:** **Ansible** = an **open-source automation tool**. It sets up servers automatically: installs packages, creates users and folders, starts services. You describe the work in **playbooks** written in **YAML**.
+
+**What Ansible is used for:**
+
+| Use | Example |
+|---|---|
+| **Configuration management** | install nginx, create users, set up files on servers (our main use) |
+| **Application deployment** | copy the app code to servers and restart it |
+| **Provisioning** | create servers (e.g. EC2) |
+| **Orchestration** | do steps across many servers in the right order: database → backend → frontend |
 
 To run any application you need **2 things**:
 
@@ -64,6 +73,15 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 ```
 
 **Why not just a shell script?** A script works on one server and one OS, and can break if you run it twice. Ansible works on **many servers at once**, on **any Linux OS**, and is **safe to run again and again**.
+
+**Key features:**
+
+| Feature | One-line meaning |
+|---|---|
+| **Agentless** | nothing installed on managed servers; uses SSH (Linux) or WinRM (Windows) |
+| **Idempotent** | running a playbook many times gives the same result; if nginx is already running, it won't start it again |
+| **Declarative** | you write **what** you want ("nginx should be present"), Ansible decides **how** |
+| **Extensible** | thousands of ready modules, and you can write your own in Python |
 
 ## 2. Key terms
 
@@ -86,6 +104,8 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 | **Playbook** | a YAML file with one or more plays |
 | **Ad-hoc command** | run one module from the command line without a playbook (`ansible all -m ping`) |
 | **Facts** | info Ansible collects about a server (OS, IP, memory) in "Gathering Facts" |
+| **Plugin** | adds extra features to Ansible itself, e.g. the SSH connection, the output display, the AWS dynamic inventory |
+| **Declarative** | you describe the end state you want, not the steps to get there |
 | **Variable** | a name that stores a value, used as `{{ name }}` |
 | **become** | run a task as root (sudo) |
 | **Idempotent** | running it again gives the same result; nothing is changed twice |
@@ -94,8 +114,8 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 ## 3. How Ansible connects to managed nodes
 
 **Definition:**
-- **Control node** (Ansible server) = the server where Ansible is **installed**. You run all commands from here.
-- **Managed node** = a server Ansible **configures**. It only needs **SSH + Python**, no Ansible. That's why Ansible is called **agentless**.
+- **Control node** (Ansible server) = the machine where Ansible is **installed**. You run all commands from here. It can be your laptop (Linux/Mac) or a server; **Windows can't be a control node**.
+- **Managed node** (host) = a server Ansible **configures**. It only needs **SSH + Python**, no Ansible. That's why Ansible is called **agentless**. (Windows servers are managed over **WinRM** instead of SSH.)
 
 ![How Ansible works: control node connects over SSH to managed nodes](images/01-how-ansible-works.svg)
 
@@ -119,7 +139,7 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 
 ## 4. Modules
 
-**Definition:** **Module** = a small ready-made program that does **one job** on a server: install a package, start a service, copy a file. In Ansible, **everything is done by a module**. A **collection** is a package of modules (for example `ansible.builtin`).
+**Definition:** **Module** = a small ready-made program that does **one job** on a server: install a package, start a service, copy a file. In Ansible, **everything is done by a module**. A **collection** is a package of modules (for example `ansible.builtin`). Most modules come with Ansible (**built-in**); you can also write your own (**custom modules**, in Python).
 
 ![Module: you write what you want, Ansible decides how, and reports changed or ok](images/03-module.svg)
 
@@ -142,7 +162,7 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 
 ## 5. Inventory
 
-**Definition:** **Inventory** = a file that lists the **servers Ansible manages**, put into **groups**. Usually called `inventory.ini`.
+**Definition:** **Inventory** = a file that lists the **servers Ansible manages**, put into **groups**. Usually called `inventory.ini`. If you don't pass `-i`, Ansible uses the default `/etc/ansible/hosts`.
 
 ![Inventory: servers in groups, and a group of groups](images/02-inventory.svg)
 
@@ -269,7 +289,7 @@ ansible-inventory -i aws_ec2.yml --graph
 
 ## 6. YAML
 
-**Definition:** **YAML** = a simple text format for data. It uses **`key: value`** pairs, **indentation (spaces)** to show what's inside what, and **`-`** to start a list item. Playbooks are written in YAML.
+**Definition:** **YAML** = a simple text format for data. It uses **`key: value`** pairs, **indentation (spaces)** to show what's inside what, and **`-`** to start a list item. Playbooks are written in YAML. (YAML stands for "YAML Ain't Markup Language".)
 
 **Only 2 shapes to know:**
 
@@ -351,15 +371,19 @@ skills:                       # map inside a map (no -)
 **Definition:** **Workflow** = the order of steps from writing the files to a configured server.
 
 ```
-1. Write the inventory   (WHICH servers)        inventory.ini
+1. Write the inventory     (WHICH servers)        inventory.ini
           │
-2. Write the playbook    (WHAT to do)           04-nginx.yaml
+2. Write the playbook      (WHAT to do)           04-nginx.yaml
           │
-3. Run it                ansible-playbook -i inventory.ini 04-nginx.yaml
+3. Run it                  ansible-playbook -i inventory.ini 04-nginx.yaml
           │
-4. Ansible logs in over SSH to each server, runs the modules
+4. Connect                 Ansible logs in to each server over SSH
           │
-5. Read the result       PLAY RECAP: ok / changed / failed
+5. Gather facts            collects OS, IP, CPU of each server
+          │
+6. Run the modules         copies each module to the server, runs it, then deletes it
+          │
+7. Read the result         PLAY RECAP: ok / changed / failed
 ```
 
 **Folder structure** of the class code repo (`ansible-code`):
