@@ -781,6 +781,17 @@ curl -I http://172.31.10.232
 
 # Part 7: Clean up (on your laptop)
 
+> ⚠️ **Run these on your laptop terminal, NOT on the Ansible server.** The Ansible server has no AWS credentials, so `aws` commands there fail with `Unable to locate credentials`.
+
+First leave the Ansible server:
+
+```bash
+exit
+```
+
+**What it does:** logs you out of the control node and back to your laptop terminal.
+**Check:** the prompt should **not** say `ec2-user@ansible-control` any more.
+
 ### Step 34: Delete the servers
 
 ```bash
@@ -835,6 +846,8 @@ rm -f ansible-lab.pem
 | `ssh`/`scp` to the control node: `Connection timed out` | your laptop's IP changed | redo Step 2, then add the new IP to the control SG (Step 4, second command) |
 | `telnet`/`ansible`: `Connection timed out` to a node | wrong SG or wrong IP | node needs `ansible-managed-sg`; use the **private** IP |
 | `Permission denied (publickey)` | wrong key or user | test `ssh -i ~/.ssh/ansible_lab ec2-user@<ip>`; `chmod 400` the key |
+| `aws: Unable to locate credentials` | ran an `aws` command on the Ansible server | `exit` to your laptop terminal and run it there |
+| `no hosts matched` / `config file = None` | ran Ansible from the wrong folder (e.g. inside `playbooks/`) | `cd ~/ansible-raw-lab` (the folder with `ansible.cfg`) |
 | `config file = None` | not in the project folder | `cd ~/ansible-raw-lab` |
 | `no such identity: ... ansible_lab` | wrong `private_key_file` path | `ls ~/.ssh/` and fix `ansible.cfg` |
 | browser can't open nginx | port 80 not open / wrong IP | Step 5; use the node's **public** IP |
