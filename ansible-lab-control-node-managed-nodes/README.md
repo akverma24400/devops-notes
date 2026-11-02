@@ -310,7 +310,7 @@ aws ec2 run-instances \
 Expected: one instance ID on the screen:
 
 ```
-i-097c69492f2cc5277
+i-0427f97bdd7aee64e
 ```
 
 > **Run it only once.** Every run creates **another** server. If you're not sure whether it worked, check first: `aws ec2 describe-instances --filters "Name=tag:Name,Values=ansible-control" "Name=instance-state-name,Values=pending,running" --query 'Reservations[].Instances[].InstanceId' --output text`
@@ -406,7 +406,7 @@ Expected:
 -----------------------------------------------------------------------------
 |                             DescribeInstances                             |
 +-----------------+-----------------------+---------------+-----------------+
-|  ansible-control|  i-097c69492f2cc5277  |  172.31.30.10 |  54.210.11.22   |
+|  ansible-control|  i-0427f97bdd7aee64e  |  172.31.30.10 |  54.210.11.22   |
 |  node1          |  i-0bbb...            |  172.31.16.19 |  3.88.44.55     |
 |  node2          |  i-0ccc...            |  172.31.20.45 |  18.207.66.77   |
 +-----------------+-----------------------+---------------+-----------------+
@@ -456,7 +456,7 @@ echo "CONTROL_PUBLIC_IP=$CONTROL_PUBLIC_IP"
 **Or fill a box by hand**, with the real value and no `$` on the left:
 
 ```bash
-CONTROL_ID=i-097c69492f2cc5277
+CONTROL_ID=i-0427f97bdd7aee64e
 echo $CONTROL_ID
 ```
 
@@ -468,7 +468,7 @@ These are the real IDs from my lab, ready to paste. **Your IDs will be different
 AMI_ID=ami-0c230065b91270bc6          # Amazon Linux 2023
 CONTROL_SG=sg-0a2587a6c7da61e37       # ansible-control-sg
 MANAGED_SG=sg-08bc86c7cf682a5d7       # ansible-managed-sg
-CONTROL_ID=i-097c69492f2cc5277        # ansible-control
+CONTROL_ID=i-0427f97bdd7aee64e        # ansible-control
 MY_IP=$(curl -s https://checkip.amazonaws.com)
 
 echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$CONTROL_ID  MY_IP=$MY_IP"
@@ -480,7 +480,7 @@ echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$C
 | `ansible-lab` | key pair | `ansible-lab.pem` on my laptop |
 | `ansible-control-sg` | security group | `sg-0a2587a6c7da61e37` |
 | `ansible-managed-sg` | security group | `sg-08bc86c7cf682a5d7` |
-| `ansible-control` | EC2 instance | `i-097c69492f2cc5277` |
+| `ansible-control` | EC2 instance | `i-0427f97bdd7aee64e` |
 | `node1` | EC2 instance | *(add after launch)* |
 | `node2` | EC2 instance | *(add after launch)* |
 
