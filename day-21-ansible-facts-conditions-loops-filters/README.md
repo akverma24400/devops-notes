@@ -52,9 +52,37 @@ In this class we learn how to make playbooks **smart**: read information about t
 
 **Definition:** **Facts** = information Ansible **collects automatically** about a managed server (OS, IP, CPU, memory, disks…) and stores as **variables**.
 
-**Gather facts** = the step that collects them. It is the **first task of every play**, shown as `TASK [Gathering Facts]`. It uses the **`setup`** module behind the scenes.
+**Gathering facts** = the step that collects them. You see it as the **first task of every play**: `TASK [Gathering Facts]`, even though you never wrote it.
 
-**Facts are variables.** You use them the same way: `{{ ansible_facts['os_family'] }}`.
+### What does gathering facts do?
+
+![How gathering facts works](images/04-how-gather-facts-works.svg)
+
+| # | What happens |
+|---|---|
+| 1 | The play starts. Before your tasks, Ansible connects to each server (SSH, or `connection: local` for the Ansible server itself) |
+| 2 | It runs the **`setup`** module on that server |
+| 3 | `setup` reads the system: OS name and version, hostname, IP addresses, CPU, RAM, disks, Python version… |
+| 4 | It sends everything back to the Ansible server as **JSON** |
+| 5 | Ansible saves it in a variable called **`ansible_facts`**, one per server |
+| 6 | Your tasks can now use it: `{{ ansible_facts['os_family'] }}` |
+
+**Facts are variables** (`variables == facts`). You use them exactly like your own variables, but **you don't define them**: Ansible fills them in from the real server.
+
+### Why do we use facts?
+
+A playbook usually runs on **many different servers**. Facts let the playbook **look at each server and decide**, instead of you hard-coding values.
+
+| Need | Without facts | With facts |
+|---|---|---|
+| Install a package on Amazon Linux **and** Ubuntu | write 2 playbooks | one playbook: `when: ansible_facts.os_family == "RedHat"` → `dnf`, `"Debian"` → `apt` |
+| Put the server's private IP in a config file | look up and type each IP by hand | `{{ ansible_facts['default_ipv4']['address'] }}` |
+| Skip small servers | check each server yourself | `when: ansible_facts.memtotal_mb > 1000` |
+| Print a report of all servers (OS, IP, RAM) | log in to each one | one `debug` task |
+
+**In one line:** facts tell the playbook **"who is this server?"**, so the same playbook works correctly on every server.
+
+### Useful facts
 
 | Fact | Example value | Use it for |
 |---|---|---|
@@ -73,7 +101,13 @@ In this class we learn how to make playbooks **smart**: read information about t
 | bracket style | `ansible_facts['default_ipv4']['address']` |
 | dot style | `ansible_facts.default_ipv4.address` |
 
-**Turn it off** when a play doesn't need facts (it saves a few seconds per server):
+`default_ipv4` is a **dictionary** inside `ansible_facts`, and `address` is a key inside it. That's why there are two levels.
+
+> Use `ansible_facts['os_family']`, not the old `ansible_os_family` form. Newer Ansible versions warn that the old form is deprecated.
+
+### Turning facts off
+
+Gathering facts takes a few seconds **per server**. If a play doesn't use any fact, turn it off:
 
 ```yaml
 - name: no facts needed
@@ -81,9 +115,12 @@ In this class we learn how to make playbooks **smart**: read information about t
   gather_facts: false
 ```
 
-If facts are off and a task uses one, the task fails because the value is **undefined**.
+| `gather_facts` | Result |
+|---|---|
+| `true` (default) | `TASK [Gathering Facts]` runs, `ansible_facts` is filled |
+| `false` | faster, but any task that uses `ansible_facts` **fails** (the value is undefined) |
 
-> Use `ansible_facts['os_family']`, not the old `ansible_os_family` form. Newer Ansible versions warn that the old form is deprecated.
+**See facts without a playbook** (ad-hoc): `ansible local -c local -m setup`. Add `-a "filter=ansible_os_family"` to see just one.
 
 ## 2. Which ansible.cfg is used?
 

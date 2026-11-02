@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="380" viewBox="0 0 960 380" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5f6368"/></marker></defs>
+  <rect width="960" height="380" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">What happens in TASK [Gathering Facts]</text>
+  <g font-size="14">
+    <rect x="30" y="70" width="270" height="200" rx="10" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text x="165" y="98" text-anchor="middle" font-weight="700" fill="#174ea6">Ansible server (control node)</text>
+    <text x="45" y="130" fill="#202124">ansible-playbook starts a play</text>
+    <text x="45" y="165" fill="#202124">5. stores the answer as</text>
+    <text x="45" y="187" font-family="monospace" font-size="13" fill="#174ea6">   ansible_facts</text>
+    <text x="45" y="222" fill="#202124">6. your tasks can now use</text>
+    <text x="45" y="244" font-family="monospace" font-size="13" fill="#174ea6">{{ ansible_facts[...] }}</text>
+    <rect x="660" y="70" width="270" height="200" rx="10" fill="#e6f4ea" stroke="#1e8e3e"/>
+    <text x="795" y="98" text-anchor="middle" font-weight="700" fill="#137333">Managed node (target server)</text>
+    <text x="675" y="130" fill="#202124">2. setup module runs here</text>
+    <text x="675" y="160" fill="#202124">3. reads the system:</text>
+    <text x="690" y="184" font-size="13" fill="#202124">OS, version, hostname, IPs,</text>
+    <text x="690" y="204" font-size="13" fill="#202124">CPU, RAM, disks, Python...</text>
+    <text x="675" y="236" fill="#202124">4. returns it as JSON</text>
+    <line x1="302" y1="120" x2="655" y2="120" stroke="#1a73e8" stroke-width="2" marker-end="url(#a)"/>
+    <text x="480" y="110" text-anchor="middle" fill="#174ea6">1. SSH: run the setup module</text>
+    <line x1="655" y1="236" x2="305" y2="236" stroke="#1e8e3e" stroke-width="2" marker-end="url(#a)"/>
+    <text x="480" y="226" text-anchor="middle" fill="#137333">facts (JSON) come back</text>
+    <rect x="335" y="140" width="290" height="62" rx="8" fill="#f8f9fa" stroke="#dadce0"/>
+    <text x="350" y="164" font-family="monospace" font-size="12" fill="#202124">"os_family": "RedHat",</text>
+    <text x="350" y="182" font-family="monospace" font-size="12" fill="#202124">"default_ipv4": {"address": ...},</text>
+    <text x="350" y="198" font-family="monospace" font-size="12" fill="#202124">"memtotal_mb": 916, ...</text>
+  </g>
+  <rect x="30" y="295" width="900" height="60" rx="10" fill="#fef7e0" stroke="#f9ab00"/>
+  <text x="480" y="320" text-anchor="middle" font-size="14" fill="#202124">Runs automatically, once per server, at the <tspan font-weight="700">start of every play</tspan>, before your tasks.</text>
+  <text x="480" y="342" text-anchor="middle" font-size="14" fill="#202124">Why: the playbook can <tspan font-weight="700">decide</tspan> based on the real server (which OS? which IP? enough RAM?) instead of guessing.</text>
+</svg>
