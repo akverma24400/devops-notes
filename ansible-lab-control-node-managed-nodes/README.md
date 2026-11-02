@@ -507,6 +507,12 @@ echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$C
 | `node1` | EC2 instance | `i-094cf172053ec2ed0` |
 | `node2` | EC2 instance | `i-042255565324b6c10` |
 
+| Server | Instance ID | Private IP | Public IP |
+|---|---|---|---|
+| ansible-control | `i-0111ec6253b296e51` | `172.31.14.80` | `44.192.106.237` |
+| node1 | `i-094cf172053ec2ed0` | `172.31.5.204` | `13.219.224.71` |
+| node2 | `i-042255565324b6c10` | `172.31.10.232` | `44.214.4.44` |
+
 # 5. Prepare the control node
 
 ## 5.1 Step 1: Copy the private key to the control node
