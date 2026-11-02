@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b3954"/></marker>
+  </defs>
+  <rect width="960" height="500" rx="12" fill="#ffffff"/>
+  <text x="480" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Ansible architecture</text>
+
+  <!-- user -->
+  <circle cx="330" cy="70" r="14" fill="#0b3954"/>
+  <path d="M308,110 Q308,88 330,88 Q352,88 352,110 z" fill="#0b3954"/>
+  <text x="365" y="88" font-size="16" font-weight="700" fill="#0b3954">You (user)</text>
+  <text x="365" y="107" font-size="13" fill="#3c4043">run ansible / ansible-playbook</text>
+  <line x1="330" y1="114" x2="330" y2="146" stroke="#0b3954" stroke-width="3" marker-end="url(#a)"/>
+
+  <!-- cloud -->
+  <g fill="#e8f0fe" stroke="#1a73e8" stroke-width="2">
+    <path d="M640,100 a26,26 0 0,1 22,-38 a34,34 0 0,1 62,-8 a26,26 0 0,1 44,18 a22,22 0 0,1 -6,28 z"/>
+  </g>
+  <text x="702" y="84" text-anchor="middle" font-size="13" font-weight="700" fill="#174ea6">Cloud (AWS)</text>
+  <path d="M702,104 L702,128 L120,128 L120,144" fill="none" stroke="#1a73e8" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a)"/>
+  <text x="470" y="122" font-size="12" fill="#1a73e8">dynamic inventory: list of running servers</text>
+
+  <!-- main box -->
+  <rect x="40" y="150" width="620" height="310" rx="10" fill="#f8f9fa" stroke="#0b3954" stroke-width="2"/>
+  <text x="56" y="174" font-size="13" font-weight="700" fill="#5f6368">CONTROL NODE</text>
+
+  <rect x="60" y="185" width="130" height="80" rx="8" fill="#137e5b"/>
+  <text x="125" y="220" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Inventory</text>
+  <text x="125" y="242" text-anchor="middle" font-size="12" fill="#e6f4ea">WHICH servers</text>
+  <rect x="60" y="280" width="130" height="80" rx="8" fill="#137e5b"/>
+  <text x="125" y="315" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Playbooks</text>
+  <text x="125" y="337" text-anchor="middle" font-size="12" fill="#e6f4ea">WHAT to do</text>
+
+  <rect x="215" y="185" width="240" height="120" rx="8" fill="#0f6b4d"/>
+  <text x="335" y="240" text-anchor="middle" font-size="26" font-weight="700" fill="#ffffff">Ansible</text>
+  <text x="335" y="266" text-anchor="middle" font-size="13" fill="#e6f4ea">engine: reads, connects, runs</text>
+
+  <!-- cylinders -->
+  <g>
+    <path d="M220,335 v50 a50,12 0 0,0 100,0 v-50" fill="#3bb08a" stroke="#0f6b4d" stroke-width="2"/>
+    <ellipse cx="270" cy="335" rx="50" ry="12" fill="#5cc5a0" stroke="#0f6b4d" stroke-width="2"/>
+    <text x="270" y="372" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">Core</text>
+    <text x="270" y="389" text-anchor="middle" font-size="12" fill="#ffffff">modules</text>
+    <path d="M350,335 v50 a50,12 0 0,0 100,0 v-50" fill="#3bb08a" stroke="#0f6b4d" stroke-width="2"/>
+    <ellipse cx="400" cy="335" rx="50" ry="12" fill="#5cc5a0" stroke="#0f6b4d" stroke-width="2"/>
+    <text x="400" y="372" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">Custom</text>
+    <text x="400" y="389" text-anchor="middle" font-size="12" fill="#ffffff">modules</text>
+  </g>
+  <text x="335" y="425" text-anchor="middle" font-size="12" fill="#3c4043">modules = the tools that do the work</text>
+
+  <rect x="480" y="185" width="160" height="80" rx="8" fill="#137e5b"/>
+  <text x="560" y="215" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Connection</text>
+  <text x="560" y="235" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">plugins</text>
+  <text x="560" y="254" text-anchor="middle" font-size="12" fill="#e6f4ea">SSH / WinRM</text>
+  <rect x="480" y="300" width="160" height="80" rx="8" fill="#5cc5a0"/>
+  <text x="560" y="333" text-anchor="middle" font-size="15" font-weight="700" fill="#0b3954">Other plugins</text>
+  <text x="560" y="354" text-anchor="middle" font-size="12" fill="#0b3954">output, logging, …</text>
+
+  <!-- arrows to hosts -->
+  <g stroke="#0b3954" stroke-width="3" fill="none">
+    <line x1="644" y1="225" x2="750" y2="175" marker-end="url(#a)"/>
+    <line x1="644" y1="225" x2="750" y2="240" marker-end="url(#a)"/>
+    <line x1="644" y1="225" x2="750" y2="305" marker-end="url(#a)"/>
+    <line x1="644" y1="225" x2="750" y2="385" marker-end="url(#a)"/>
+  </g>
+  <text x="664" y="186" font-size="13" font-weight="700" fill="#a50e0e">SSH</text>
+
+  <!-- hosts -->
+  <g font-size="15" font-weight="700" fill="#ffffff" text-anchor="middle">
+    <rect x="755" y="150" width="170" height="48" rx="6" fill="#137e5b"/><text x="840" y="180">Host 1</text>
+    <rect x="755" y="215" width="170" height="48" rx="6" fill="#137e5b"/><text x="840" y="245">Host 2</text>
+    <rect x="755" y="280" width="170" height="48" rx="6" fill="#137e5b"/><text x="840" y="310">Host 3</text>
+    <rect x="767" y="350" width="170" height="48" rx="6" fill="#5cc5a0"/>
+    <rect x="761" y="356" width="170" height="48" rx="6" fill="#3bb08a"/>
+    <rect x="755" y="362" width="170" height="48" rx="6" fill="#137e5b"/><text x="840" y="392">Host N</text>
+  </g>
+  <text x="840" y="440" text-anchor="middle" font-size="13" fill="#3c4043">managed nodes</text>
+  <text x="840" y="458" text-anchor="middle" font-size="12" fill="#3c4043">(no Ansible installed)</text>
+</svg>

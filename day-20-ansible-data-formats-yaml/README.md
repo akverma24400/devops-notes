@@ -19,7 +19,7 @@ In this class we learn the **basics of Ansible**: what it is, how it manages ser
 **Part 1: Concepts**
 1. [What is Ansible?](#1-what-is-ansible)
 2. [Key terms](#2-key-terms)
-3. [How Ansible connects to managed nodes](#3-how-ansible-connects-to-managed-nodes)
+3. [Ansible architecture and how it connects](#3-ansible-architecture-and-how-it-connects)
 4. [Modules](#4-modules)
 5. [Inventory](#5-inventory) (static vs dynamic)
 6. [YAML](#6-yaml)
@@ -111,11 +111,30 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 | **Idempotent** | running it again gives the same result; nothing is changed twice |
 | **`ansible.cfg`** | Ansible's settings file (default inventory, user, key) |
 
-## 3. How Ansible connects to managed nodes
+## 3. Ansible architecture and how it connects
 
 **Definition:**
 - **Control node** (Ansible server) = the machine where Ansible is **installed**. You run all commands from here. It can be your laptop (Linux/Mac) or a server; **Windows can't be a control node**.
 - **Managed node** (host) = a server Ansible **configures**. It only needs **SSH + Python**, no Ansible. That's why Ansible is called **agentless**. (Windows servers are managed over **WinRM** instead of SSH.)
+
+**Architecture:** everything lives on the control node. You run a command, Ansible reads the inventory and playbook, and uses a **connection plugin** (SSH) to reach the hosts and run **modules** on them.
+
+![Ansible architecture: user, control node with inventory, playbooks, modules and plugins, connecting to hosts](images/08-ansible-architecture.svg)
+
+| Part | Job |
+|---|---|
+| **Inventory** | WHICH servers (written by you, or fetched from AWS = dynamic) |
+| **Playbooks** | WHAT to do |
+| **Ansible engine** | reads both, connects, runs the tasks |
+| **Modules** (core + custom) | the tools that do the actual work |
+| **Connection plugins** | how to reach the hosts: SSH (Linux) or WinRM (Windows) |
+| **Hosts** | the managed nodes |
+
+**How you reach the servers:** you SSH into the Ansible server, and the Ansible server connects to every managed node.
+
+![You SSH to the Ansible server; it reaches Linux servers over SSH and Windows servers over WinRM](images/09-operator-ssh-winrm.svg)
+
+**Step by step, what happens when you run a playbook:**
 
 ![How Ansible works: control node connects over SSH to managed nodes](images/01-how-ansible-works.svg)
 

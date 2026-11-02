@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#202124"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#188038"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a73e8"/></marker>
+  </defs>
+  <rect width="960" height="440" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">How you reach the servers: you → Ansible server → managed nodes</text>
+
+  <!-- operator -->
+  <circle cx="110" cy="170" r="24" fill="#e8a33d"/>
+  <path d="M70,240 Q70,200 110,200 Q150,200 150,240 z" fill="#e8a33d"/>
+  <rect x="78" y="215" width="64" height="26" rx="3" fill="#5f6368"/>
+  <text x="110" y="275" text-anchor="middle" font-size="17" font-weight="700" fill="#202124">You</text>
+  <text x="110" y="295" text-anchor="middle" font-size="13" fill="#3c4043">laptop / terminal</text>
+
+  <line x1="160" y1="210" x2="318" y2="210" stroke="#202124" stroke-width="2" marker-end="url(#k)"/>
+  <rect x="180" y="196" width="118" height="26" fill="#ffffff" stroke="#202124"/>
+  <text x="239" y="214" text-anchor="middle" font-size="13" fill="#202124">ssh login</text>
+
+  <!-- ansible server -->
+  <rect x="330" y="160" width="110" height="74" rx="6" fill="#d2e3fc" stroke="#1a73e8" stroke-width="3"/>
+  <rect x="340" y="170" width="90" height="54" fill="#8ab4f8"/>
+  <rect x="375" y="236" width="20" height="14" fill="#1a73e8"/>
+  <rect x="355" y="250" width="60" height="6" rx="2" fill="#1a73e8"/>
+  <text x="385" y="285" text-anchor="middle" font-size="17" font-weight="700" fill="#202124">Ansible server</text>
+  <g font-size="13" fill="#3c4043" text-anchor="middle">
+    <text x="385" y="307">has: playbooks</text>
+    <text x="385" y="325">variables, inventory</text>
+    <text x="385" y="343">ansible.cfg, SSH key</text>
+  </g>
+
+  <!-- arrows -->
+  <line x1="448" y1="190" x2="720" y2="110" stroke="#188038" stroke-width="3" marker-end="url(#g)"/>
+  <g transform="rotate(-16 585 140)">
+    <rect x="530" y="126" width="110" height="40" fill="#ffffff" stroke="#188038"/>
+    <text x="585" y="143" text-anchor="middle" font-size="13" font-weight="700" fill="#188038">agentless</text>
+    <text x="585" y="160" text-anchor="middle" font-size="13" font-weight="700" fill="#188038">SSH · 22</text>
+  </g>
+  <line x1="448" y1="230" x2="720" y2="320" stroke="#1a73e8" stroke-width="3" marker-end="url(#b)"/>
+  <g transform="rotate(18 585 278)">
+    <rect x="525" y="258" width="120" height="40" fill="#ffffff" stroke="#1a73e8"/>
+    <text x="585" y="275" text-anchor="middle" font-size="13" font-weight="700" fill="#1a73e8">agentless</text>
+    <text x="585" y="292" text-anchor="middle" font-size="13" font-weight="700" fill="#1a73e8">WinRM · 5985/6</text>
+  </g>
+
+  <!-- linux -->
+  <rect x="735" y="60" width="110" height="80" rx="8" fill="#fce8e6" stroke="#d93025" stroke-width="3"/>
+  <rect x="750" y="76" width="80" height="14" rx="3" fill="#d93025"/>
+  <rect x="750" y="96" width="80" height="14" rx="3" fill="#d93025"/>
+  <rect x="750" y="116" width="80" height="14" rx="3" fill="#d93025"/>
+  <circle cx="820" cy="83" r="3" fill="#ffffff"/><circle cx="820" cy="103" r="3" fill="#ffffff"/><circle cx="820" cy="123" r="3" fill="#ffffff"/>
+  <text x="790" y="168" text-anchor="middle" font-size="17" font-weight="700" fill="#202124">Linux servers</text>
+  <text x="790" y="188" text-anchor="middle" font-size="13" fill="#3c4043">Amazon Linux, RHEL, Ubuntu</text>
+  <text x="790" y="206" text-anchor="middle" font-size="13" fill="#3c4043">need: SSH + Python</text>
+
+  <!-- windows -->
+  <rect x="735" y="280" width="110" height="74" rx="6" fill="#fef7e0" stroke="#e8710a" stroke-width="3"/>
+  <g fill="#e8710a">
+    <rect x="765" y="292" width="23" height="23"/><rect x="792" y="292" width="23" height="23"/>
+    <rect x="765" y="319" width="23" height="23"/><rect x="792" y="319" width="23" height="23"/>
+  </g>
+  <text x="790" y="382" text-anchor="middle" font-size="17" font-weight="700" fill="#202124">Windows servers</text>
+  <text x="790" y="402" text-anchor="middle" font-size="13" fill="#3c4043">need: WinRM + PowerShell</text>
+
+  <text x="40" y="410" font-size="13" fill="#3c4043">Our lab uses only the <tspan font-weight="700" fill="#188038">green path</tspan> (Linux over SSH).</text>
+</svg>
