@@ -1,26 +1,51 @@
-# Day 20 - Ansible Basics: How It Works, Inventory, Modules, YAML, Playbooks & Variables
+# Day 20 - Ansible Basics: How Ansible Works, Modules, Inventory, Playbooks & Variables
 
-> **In short:** Ansible configures servers for you. You write **what** you want in a **playbook** (a YAML file), list your servers in an **inventory**, and Ansible logs in to each server over **SSH** and does the work with **modules**. Nothing needs to be installed on the servers it manages.
+## About this class
+
+In this class we learn the **basics of Ansible**: what it is, how it manages servers, and how to use it in a simple hands-on lab.
+
+**What we cover:**
+
+| Part | Topic |
+|---|---|
+| **Part 1: Concepts** | what Ansible is · how it connects to managed nodes **over SSH** and runs commands on them · **modules** · **inventory** files · **YAML** · **playbooks** · the Ansible **workflow** and **folder structure** |
+| **Part 2: Lab** | security group **inbound rules** · create the **Ansible server** · install Ansible · first playbooks · **multi-play** playbook · create a **managed server** · install **nginx** with a playbook |
+| **Part 3: Variables** | the 6 places to define variables · which value wins |
 
 **More in this folder:** [Interview questions](interview-questions/README.md) · **Hands-on lab:** [Control node + managed nodes with SSH keys & ansible.cfg](../ansible-lab-control-node-managed-nodes/README.md)
 
 ## Table of Contents
 
+**Part 1: Concepts**
 1. [What is Ansible?](#1-what-is-ansible)
-2. [How Ansible works](#2-how-ansible-works)
-3. [Step 1: Create the Ansible server](#3-step-1-create-the-ansible-server)
-4. [Step 2: Install Ansible](#4-step-2-install-ansible)
-5. [Inventory: which servers](#5-inventory-which-servers)
-6. [Modules: what to do](#6-modules-what-to-do)
-7. [YAML: the language of playbooks](#7-yaml-the-language-of-playbooks)
-8. [Playbooks](#8-playbooks)
-9. [Step 3: Create the frontend server](#9-step-3-create-the-frontend-server)
-10. [Step 4: Install nginx with a playbook](#10-step-4-install-nginx-with-a-playbook)
-11. [Variables](#11-variables)
-12. [What I learned](#12-what-i-learned)
-13. [Interview Questions](#interview-questions)
+2. [How Ansible connects to managed nodes](#2-how-ansible-connects-to-managed-nodes)
+3. [Modules](#3-modules)
+4. [Inventory](#4-inventory)
+5. [YAML](#5-yaml)
+6. [Playbooks](#6-playbooks)
+7. [Ansible workflow and folder structure](#7-ansible-workflow-and-folder-structure)
+
+**Part 2: Lab**
+- [Step 1: Security group inbound rules](#step-1-security-group-inbound-rules)
+- [Step 2: Create the Ansible server](#step-2-create-the-ansible-server)
+- [Step 3: Install Ansible and get the code](#step-3-install-ansible-and-get-the-code)
+- [Step 4: Check the inventory](#step-4-check-the-inventory)
+- [Step 5: First playbook (ping)](#step-5-first-playbook-ping)
+- [Step 6: Print a message (debug)](#step-6-print-a-message-debug)
+- [Step 7: Multi-play playbook](#step-7-multi-play-playbook)
+- [Step 8: Create the managed server (frontend)](#step-8-create-the-managed-server-frontend)
+- [Step 9: Connect to the frontend over SSH](#step-9-connect-to-the-frontend-over-ssh)
+- [Step 10: Install nginx with a playbook](#step-10-install-nginx-with-a-playbook)
+
+**Part 3: Variables**
+- [Where variables can be defined](#where-variables-can-be-defined)
+- [Which value wins?](#which-value-wins)
+
+[What I learned](#what-i-learned) · [Interview Questions](#interview-questions)
 
 ---
+
+# Part 1: Concepts
 
 ## 1. What is Ansible?
 
@@ -37,12 +62,12 @@ To run any application you need **2 things**:
 plain server ──(Ansible configures it)──► ready server ──(+ code)──► app running
 ```
 
-**Why not just a shell script?** A script works on one server and one OS, and breaks if you run it twice. Ansible works on **many servers at once**, on **any Linux OS**, and is **safe to run again and again**.
+**Why not just a shell script?** A script works on one server and one OS, and can break if you run it twice. Ansible works on **many servers at once**, on **any Linux OS**, and is **safe to run again and again**.
 
-## 2. How Ansible works
+## 2. How Ansible connects to managed nodes
 
 **Definition:**
-- **Control node** = the server where Ansible is **installed**. You run all commands from here.
+- **Control node** (Ansible server) = the server where Ansible is **installed**. You run all commands from here.
 - **Managed node** = a server Ansible **configures**. It only needs **SSH + Python**, no Ansible. That's why Ansible is called **agentless**.
 
 ![How Ansible works: control node connects over SSH to managed nodes](images/01-how-ansible-works.svg)
@@ -51,71 +76,34 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 |---|---|---|
 | Ansible installed? | ✅ yes | ❌ no |
 | What it has | inventory, playbooks, SSH key/password | SSH server + Python |
-| Role | sends the work | receives and runs the work |
 | Connection | starts SSH (port 22) | accepts SSH (port 22) |
 
 > In one line: **Ansible = SSH + Python + a list of tasks.**
 
-## 3. Step 1: Create the Ansible server
+## 3. Modules
 
-**Definition:** **`aws ec2 run-instances`** = the AWS CLI command that **creates** an EC2 server.
+**Definition:** **Module** = a small ready-made program that does **one job** on a server: install a package, start a service, copy a file. In Ansible, **everything is done by a module**. A **collection** is a package of modules (for example `ansible.builtin`).
 
-We create the control node and attach the **`roboshop-common`** security group, which allows port 22 (SSH).
+![Module: you write what you want, Ansible decides how, and reports changed or ok](images/03-module.svg)
 
-```bash
-aws ec2 run-instances \
-    --image-id ami-0055977a6e828a4f4 \
-    --instance-type t3.micro \
-    --security-groups "roboshop-common" \
-    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ansible-server}]' \
-    --query 'Instances[0].InstanceId' \
-    --output text
-```
-
-| Option | Means |
+| Linux command | Ansible module |
 |---|---|
-| `--image-id` | which OS image (AMI) to use |
-| `--instance-type t3.micro` | size of the server (CPU/RAM) |
-| `--security-groups "roboshop-common"` | the firewall to attach, by name |
-| `--tag-specifications ... Value=ansible-server` | gives the server the name `ansible-server` |
-| `--query 'Instances[0].InstanceId'` | from the big output, print only the **instance ID** |
-| `--output text` | print it as plain text |
+| `sudo dnf install nginx -y` | `package: name=nginx state=present` |
+| `sudo systemctl start nginx` | `service: name=nginx state=started` |
+| `sudo systemctl enable nginx` | `service: name=nginx enabled=yes` |
+| `echo "hello"` | `debug: msg="hello"` |
 
-**Expected:** only the ID, e.g. `i-0abc123...`
+**You say WHAT, Ansible works out HOW.** The `package` module checks the OS first, then uses `dnf` on Amazon Linux or `apt` on Ubuntu, and only installs if it's missing.
 
-## 4. Step 2: Install Ansible
+| Result | Meaning |
+|---|---|
+| `changed` (yellow) | Ansible had to do something |
+| `ok` (green) | already correct, nothing to do |
+| `failed` (red) | something went wrong |
 
-Log in to the Ansible server:
+**Idempotent** = running the same thing many times gives the same result. The second run just says `ok`.
 
-```bash
-ssh ec2-user@<ansible-server-public-ip>
-```
-
-Install Ansible:
-
-```bash
-sudo dnf install ansible -y
-```
-
-Check it:
-
-```bash
-ansible --version
-```
-
-**Expected:** `ansible [core 2.x.x]`
-
-Get the class code (inventory + playbooks):
-
-```bash
-git clone https://github.com/Abhignadumpala/ansible-code.git
-```
-
-```bash
-cd ansible-code
-```
-
-## 5. Inventory: which servers
+## 4. Inventory
 
 **Definition:** **Inventory** = a file that lists the **servers Ansible manages**, put into **groups**. Usually called `inventory.ini`.
 
@@ -148,34 +136,7 @@ localhost
 | `[local]` + `localhost` | the Ansible server itself |
 | `;` | a comment |
 
-**Check the inventory:**
-
-```bash
-ansible-inventory -i inventory.ini --graph
-```
-
-**What it does:** shows all groups and servers as a tree. It only **reads the file**; it doesn't connect to anything.
-
-**Expected:**
-
-```
-@all:
-  |--@ungrouped:
-  |--@roboshop:
-  |  |--@frontend:
-  |  |  |--172.31.20.30
-  |  |--@backend:
-  |  |  |--172.31.20.50
-  |  |  |--172.31.20.51
-  |  |--@database:
-  |  |  |--172.31.20.45
-  |--@local:
-  |  |--localhost
-```
-
-`@` = a group. `@all` = every server. `@ungrouped` = servers written at the top of the file without a group (none here).
-
-**Target one group:** put the group name in the command.
+**Target a group** by putting its name in the command:
 
 | Command | Runs on |
 |---|---|
@@ -183,40 +144,7 @@ ansible-inventory -i inventory.ini --graph
 | `ansible roboshop -i inventory.ini -m ping` | all RoboShop servers |
 | `ansible all -i inventory.ini -m ping` | every server in the file |
 
-## 6. Modules: what to do
-
-**Definition:** **Module** = a small ready-made program that does **one job** on a server: install a package, start a service, copy a file. In Ansible, **everything is done by a module**. A **collection** is a package of modules (for example `ansible.builtin`).
-
-![Module: you write what you want, Ansible decides how, and reports changed or ok](images/03-module.svg)
-
-| Linux command | Ansible module |
-|---|---|
-| `sudo dnf install nginx -y` | `package: name=nginx state=present` |
-| `sudo systemctl start nginx` | `service: name=nginx state=started` |
-| `sudo systemctl enable nginx` | `service: name=nginx enabled=yes` |
-| `echo "hello"` | `debug: msg="hello"` |
-
-**You say WHAT, Ansible works out HOW.** The `package` module checks the OS first, then uses `dnf` on Amazon Linux or `apt` on Ubuntu. It also checks whether nginx is already installed:
-
-| Result | Meaning |
-|---|---|
-| `changed` (yellow) | Ansible had to do something (nginx was installed now) |
-| `ok` (green) | already correct, nothing to do |
-| `failed` (red) | something went wrong |
-
-**Idempotent** = running the same thing many times gives the same result. Run it twice and the second run just says `ok`.
-
-**Run one module from the command line (ad-hoc):**
-
-```bash
-ansible local -i inventory.ini -m ping
-```
-
-**What it does:** runs the `ping` module on the `local` group. `-m` = which module. `ping` doesn't send a network ping; it checks that Ansible can log in and run Python.
-
-**Expected:** `localhost | SUCCESS => { "ping": "pong" }`
-
-## 7. YAML: the language of playbooks
+## 5. YAML
 
 **Definition:** **YAML** = a simple text format for data. It uses **`key: value`** pairs, **indentation (spaces)** to show what's inside what, and **`-`** to start a list item. Playbooks are written in YAML.
 
@@ -227,7 +155,7 @@ ansible local -i inventory.ini -m ping
 | **Map** | named fields | `OS: Linux`<br>`CM: ansible` | `{"OS": "Linux", "CM": "ansible"}` |
 | **List** | items in order | `- Linux`<br>`- Ansible` | `["Linux", "Ansible"]` |
 
-**Example: a student in YAML**
+**Example: a student in YAML** (`student.yaml`)
 
 ```yaml
 firstName: Sivakumar          # map: key: value
@@ -242,7 +170,7 @@ skills:                       # map inside a map (no -)
   CM: ansible
 ```
 
-**The same student in JSON**, for comparison:
+**The same student in JSON** (`student.json`):
 
 ```json
 {
@@ -276,7 +204,7 @@ skills:                       # map inside a map (no -)
 
 > **Tip:** paste your YAML into **[yamlchecker.com](https://yamlchecker.com)** before running it. It shows the line with a wrong space or tab.
 
-## 8. Playbooks
+## 6. Playbooks
 
 **Definition:** **Playbook** = a YAML file that tells Ansible **which servers** to work on and **what tasks** to run on them, in order.
 
@@ -289,7 +217,164 @@ skills:                       # map inside a map (no -)
 | **Task** | one step, with a `name` |
 | **Module** | what the task actually does (`package`, `service`, `debug`, ...) |
 
-### 8.1 First playbook: ping the Ansible server itself
+| Keyword | Means |
+|---|---|
+| `hosts: frontend` | run on the `[frontend]` group from the inventory |
+| `become: yes` | run as **root** (sudo) |
+| `connection: local` | run on the Ansible server itself, **no SSH** |
+
+## 7. Ansible workflow and folder structure
+
+**Definition:** **Workflow** = the order of steps from writing the files to a configured server.
+
+```
+1. Write the inventory   (WHICH servers)        inventory.ini
+          │
+2. Write the playbook    (WHAT to do)           04-nginx.yaml
+          │
+3. Run it                ansible-playbook -i inventory.ini 04-nginx.yaml
+          │
+4. Ansible logs in over SSH to each server, runs the modules
+          │
+5. Read the result       PLAY RECAP: ok / changed / failed
+```
+
+**Folder structure** of the class code repo (`ansible-code`):
+
+```
+ansible-code/
+├── inventory.ini              ← the servers (groups)
+├── 01-playbook.yaml           ← ping the Ansible server
+├── 02-playbook.yaml           ← print a message (debug)
+├── 03-multi-play.yaml         ← two plays in one file
+├── 04-nginx.yaml              ← install + start nginx on frontend
+├── 05-variables.yaml  ...  11-vars-preference.yaml   ← variables
+├── course.yaml                ← variables file (used by vars_files)
+└── student.xml / student.json / student.yaml   ← data format examples
+```
+
+> Everything is kept in **Git**: change a playbook on your laptop, `git push`, then `git pull` on the Ansible server and run it.
+
+---
+
+# Part 2: Lab
+
+```
+Step 1  security group (22, 80)
+Step 2  create Ansible server ──► Step 3 install Ansible ──► Steps 4–7 inventory + first playbooks (local)
+Step 8  create frontend server ──► Step 9 SSH check ──► Step 10 nginx playbook
+```
+
+### Step 1: Security group inbound rules
+
+**Definition:** **Inbound rule** = a security group (firewall) rule that **allows traffic into** a server on a port.
+
+We use one security group, **`roboshop-common`**, on **both** servers. It needs these inbound rules:
+
+| Port | Protocol | Why |
+|---|---|---|
+| **22** | SSH | you log in to the Ansible server, and the Ansible server logs in to the frontend |
+| **80** | HTTP | to open the nginx page in a browser (only for viewing; Ansible doesn't use it) |
+
+Add port 22:
+
+```bash
+aws ec2 authorize-security-group-ingress --group-name roboshop-common --protocol tcp --port 22 --cidr 0.0.0.0/0
+```
+
+Add port 80:
+
+```bash
+aws ec2 authorize-security-group-ingress --group-name roboshop-common --protocol tcp --port 80 --cidr 0.0.0.0/0
+```
+
+**What it does:** `authorize-security-group-ingress` adds an **inbound** rule. `--cidr 0.0.0.0/0` = from anywhere.
+**Expected:** `"Return": true`. If you see `InvalidPermission.Duplicate`, the rule already exists, which is fine.
+
+> **No outbound rules needed:** security groups allow all outbound traffic by default, and they are **stateful** (replies to allowed traffic are let back in automatically).
+
+### Step 2: Create the Ansible server
+
+**Definition:** **`aws ec2 run-instances`** = the AWS CLI command that **creates** an EC2 server.
+
+```bash
+aws ec2 run-instances \
+    --image-id ami-0055977a6e828a4f4 \
+    --instance-type t3.micro \
+    --security-groups "roboshop-common" \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ansible-server}]' \
+    --query 'Instances[0].InstanceId' \
+    --output text
+```
+
+| Option | Means |
+|---|---|
+| `--image-id` | which OS image (AMI) to use |
+| `--instance-type t3.micro` | size of the server (CPU/RAM) |
+| `--security-groups "roboshop-common"` | the security group from Step 1 |
+| `--tag-specifications ... Value=ansible-server` | gives the server the name `ansible-server` |
+| `--query 'Instances[0].InstanceId'` | from the big output, print only the **instance ID** |
+| `--output text` | print it as plain text |
+
+**Expected:** only the ID, e.g. `i-0abc123...`
+
+### Step 3: Install Ansible and get the code
+
+Log in to the Ansible server:
+
+```bash
+ssh ec2-user@<ansible-server-public-ip>
+```
+
+Install Ansible:
+
+```bash
+sudo dnf install ansible -y
+```
+
+Check it:
+
+```bash
+ansible --version
+```
+
+**Expected:** `ansible [core 2.x.x]`
+
+Get the class code:
+
+```bash
+git clone https://github.com/Abhignadumpala/ansible-code.git
+```
+
+```bash
+cd ansible-code
+```
+
+### Step 4: Check the inventory
+
+```bash
+ansible-inventory -i inventory.ini --graph
+```
+
+**What it does:** shows all groups and servers as a tree. It only **reads the file**; it doesn't connect to anything.
+
+**Expected** (short):
+
+```
+@all:
+  |--@ungrouped:
+  |--@roboshop:
+  |  |--@frontend:
+  |  |  |--172.31.20.30
+  |  |--@backend:
+  |  |--@database:
+  |--@local:
+  |  |--localhost
+```
+
+`@` = a group. `@all` = every server. `@ungrouped` = servers written without a group.
+
+### Step 5: First playbook (ping)
 
 `01-playbook.yaml`:
 
@@ -307,18 +392,16 @@ skills:                       # map inside a map (no -)
 | `- name: ping demo` | start of a **play**, with a label shown in the output |
 | `hosts: local` | run on the `[local]` group (the Ansible server itself) |
 | `connection: local` | run directly here, **no SSH**, so no username/password needed |
-| `tasks:` | the list of tasks |
-| `ping:` | the module |
-
-Run it:
+| `ping:` | the module: checks Ansible can run here, answers `pong` |
 
 ```bash
 ansible-playbook -i inventory.ini 01-playbook.yaml
 ```
 
-**What it does:** `ansible-playbook` runs a playbook file. `-i` tells it where the inventory is.
+**What it does:** `ansible-playbook` runs a playbook. `-i` tells it where the inventory is.
+**Expected:** `ok: [localhost]` and `PLAY RECAP ... ok=2 changed=0 failed=0`
 
-### 8.2 Print a message: the `debug` module
+### Step 6: Print a message (debug)
 
 `02-playbook.yaml`:
 
@@ -332,7 +415,7 @@ ansible-playbook -i inventory.ini 01-playbook.yaml
       msg: "Hello Ansible..!"
 ```
 
-`debug` prints a message, like `echo`. `ansible.builtin.` is the collection it comes from; writing just `debug:` also works.
+`debug` prints a message, like `echo`. `ansible.builtin.` is the collection it comes from; just `debug:` also works.
 
 ```bash
 ansible-playbook -i inventory.ini 02-playbook.yaml
@@ -357,15 +440,13 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
 | Output | Means |
 |---|---|
 | `PLAY [...]` | the play's `name` |
-| `TASK [Gathering Facts]` | Ansible first collects info about the server (OS, IP...). Runs automatically. |
+| `TASK [Gathering Facts]` | Ansible first collects info about the server (OS, IP...), automatically |
 | `TASK [print hello world]` | your task's `name` |
-| `PLAY RECAP` | the summary per server: how many `ok`, `changed`, `failed` |
+| `PLAY RECAP` | summary per server: how many `ok`, `changed`, `failed` |
 
-> Always give every play and task a clear `name`. It's what you read in the output.
+### Step 7: Multi-play playbook
 
-### 8.3 Many plays in one playbook
-
-**Definition:** a playbook can have **more than one play**. They run **top to bottom**, and each play can target **different servers**.
+**Definition:** **Multi-play playbook** = one playbook with **more than one play**. Plays run **top to bottom**, and each play can target **different servers**.
 
 `03-multi-play.yaml`:
 
@@ -388,13 +469,20 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
   - name: PLAY-2 and TASK-1
     debug:
       msg: "Hello from PLAY-2 TASK-1"
+  - name: PLAY-2 and TASK-2
+    debug:
+      msg: "Hello from PLAY-2 TASK-2"
 ```
-
-**Run order:** PLAY-1 TASK-1 → PLAY-1 TASK-2 → PLAY-2 TASK-1.
 
 > `-` at the **left edge** = a new **play**. `-` under `tasks:` = a new **task**.
 
-**Real use:** set up the servers in the right order with one command:
+```bash
+ansible-playbook -i inventory.ini 03-multi-play.yaml
+```
+
+**Expected order:** PLAY-1 TASK-1 → PLAY-1 TASK-2 → PLAY-2 TASK-1 → PLAY-2 TASK-2, and `ok=6` (2 plays × (Gathering Facts + 2 tasks)).
+
+**Real use:** set up servers in the right order with one command:
 
 ```yaml
 - name: set up database
@@ -408,11 +496,11 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
   ...
 ```
 
-## 9. Step 3: Create the frontend server
+### Step 8: Create the managed server (frontend)
 
-**Definition:** the **frontend** server is our first **managed node**: a server Ansible connects to over SSH and configures.
+**Definition:** the **frontend** server is our **managed node**: Ansible connects to it over SSH and configures it.
 
-Same command as Step 1, only the name changes:
+Same command as Step 2, only the name changes:
 
 ```bash
 aws ec2 run-instances \
@@ -430,7 +518,16 @@ Get its **private IP** (the Ansible server talks to it inside AWS):
 aws ec2 describe-instances --instance-ids <instance-id> --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text
 ```
 
-Put the IP under `[frontend]` in `inventory.ini`:
+| | Ansible server | Frontend server |
+|---|---|---|
+| Name | `ansible-server` | `roboshop-frontend` |
+| Role | control node | managed node |
+| Ansible installed? | ✅ yes | ❌ no |
+| Security group | `roboshop-common` | `roboshop-common` |
+
+### Step 9: Connect to the frontend over SSH
+
+On the Ansible server, put the frontend's private IP under `[frontend]` in `inventory.ini`:
 
 ```ini
 [frontend]
@@ -443,8 +540,7 @@ Check that Ansible can log in to it:
 ansible frontend -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> -m ping
 ```
 
-**What it does:** Ansible connects to the frontend over **SSH (port 22)** using the username and password passed with `-e`.
-
+**What it does:** Ansible connects to the frontend over **SSH (port 22)** with the username and password passed with `-e`, then runs the `ping` module there.
 **Expected:** `172.31.20.30 | SUCCESS => { "ping": "pong" }`
 
 ```
@@ -452,9 +548,9 @@ ansible-server ── SSH (port 22, private IP) ──► roboshop-frontend
  (control node)                                  (managed node)
 ```
 
-## 10. Step 4: Install nginx with a playbook
+### Step 10: Install nginx with a playbook
 
-**Definition:** **`04-nginx.yaml`** = a playbook that **installs** nginx and **starts** it on every server in the `[frontend]` group.
+`04-nginx.yaml`:
 
 ```yaml
 - name: install and start nginx
@@ -475,13 +571,11 @@ ansible-server ── SSH (port 22, private IP) ──► roboshop-frontend
 
 | Line | Means |
 |---|---|
-| `hosts: frontend` | run on the `[frontend]` group, over **SSH** (no `connection: local` this time) |
-| `become: yes` | run as **root** (sudo). Installing software needs root. |
-| `package:` `name: nginx` `state: present` | nginx must be **installed** (uses `dnf` or `apt` automatically) |
+| `hosts: frontend` | run on the `[frontend]` group, over **SSH** (no `connection: local`) |
+| `become: yes` | run as **root**; installing software needs root |
+| `package:` `state: present` | nginx must be **installed** (uses `dnf` or `apt` automatically) |
 | `service:` `state: started` | nginx must be **running** now |
 | `enabled: yes` | nginx must **start on every boot** |
-
-**Run it:**
 
 ```bash
 ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 04-nginx.yaml
@@ -492,15 +586,7 @@ ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<
 | Run | Result | Why |
 |---|---|---|
 | 1st run | `changed` for both tasks | nginx was installed and started |
-| 2nd run | `ok`, `changed=0` | already done, nothing to change (**idempotent**) |
-
-**Open port 80** so a browser can reach nginx. Add an inbound rule to `roboshop-common`:
-
-```bash
-aws ec2 authorize-security-group-ingress --group-name roboshop-common --protocol tcp --port 80 --cidr 0.0.0.0/0
-```
-
-**What it does:** allows HTTP (port 80) into the servers from anywhere. Port 80 is only needed to **view** the page; Ansible itself only uses port 22.
+| 2nd run | `ok`, `changed=0` | already done (**idempotent**) |
 
 **Check nginx:**
 
@@ -513,15 +599,22 @@ aws ec2 authorize-security-group-ingress --group-name roboshop-common --protocol
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| browser keeps loading, then **timed out** | port 80 not allowed in the security group | add the port 80 rule above |
+| browser keeps loading, then **timed out** | port 80 not allowed | add the port 80 rule (Step 1) |
 | **connection refused** | nginx not running | run the playbook again |
 | wrong page | wrong IP | use the **frontend's** public IP, not the Ansible server's |
 
-## 11. Variables
+---
+
+# Part 3: Variables
 
 **Definition:** **Variable** = a **name** that stores a **value**. Write the value once, use it in many places with **`{{ name }}`**.
 
-Ansible can define variables in **6 places**. We try each one with a small playbook.
+| Shell | Ansible |
+|---|---|
+| `COURSE="ansible"` | `course: ansible` under `vars:` |
+| `echo "$COURSE"` | `msg: "{{ course }}"` |
+
+## Where variables can be defined
 
 | # | Where | Keyword | File |
 |---|---|---|---|
@@ -532,7 +625,7 @@ Ansible can define variables in **6 places**. We try each one with a small playb
 | 5 | in the **inventory** | `[group:vars]` | `09-variables.yaml` |
 | 6 | on the **command line** | `-e "name=value"` | `10-variables.yaml` |
 
-### 11.1 Play variables
+### 1. Play variables (05-variables.yaml)
 
 **Definition:** variables under `vars:` in the **play**. Every task in that play can use them.
 
@@ -552,12 +645,7 @@ Ansible can define variables in **6 places**. We try each one with a small playb
 
 **Expected:** `Hi, I am learning ansible from Sivakumar Reddy M, duration is 10 hrs`
 
-| Shell | Ansible |
-|---|---|
-| `COURSE="ansible"` | `course: ansible` under `vars:` |
-| `echo "$COURSE"` | `msg: "{{ course }}"` |
-
-### 11.2 Task variables
+### 2. Task variables (06-variables.yaml)
 
 **Definition:** variables under `vars:` **inside one task**. They work only in that task and **win over** play variables with the same name.
 
@@ -584,7 +672,7 @@ Ansible can define variables in **6 places**. We try each one with a small playb
 | print the vars | `100acres` | no task variable, so it uses the play variable |
 | print the vars again | `10acres` | the task's own variable wins |
 
-### 11.3 Variables from a file
+### 3. Variables from a file (07-variables.yaml)
 
 **Definition:** **`vars_files`** = load variables from a separate YAML file, so you can change values without touching the playbook.
 
@@ -610,7 +698,7 @@ duration: 10 hrs
       msg: "Hi, I am learning {{ course }} from {{ trainer }}, duration is {{ duration }}"
 ```
 
-### 11.4 Variables from a prompt
+### 4. Variables from a prompt (08-variables.yaml)
 
 **Definition:** **`vars_prompt`** = Ansible **asks you** to type the value when the playbook runs. Good for passwords you don't want to save in files.
 
@@ -633,7 +721,7 @@ duration: 10 hrs
 
 > ⚠️ Never print passwords in real projects.
 
-### 11.5 Variables from the inventory
+### 5. Variables from the inventory (09-variables.yaml)
 
 **Definition:** variables under **`[group:vars]`** in `inventory.ini`. Every server in that group gets them automatically.
 
@@ -660,7 +748,7 @@ duration=10 hrs
 ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 09-variables.yaml
 ```
 
-### 11.6 Variables from the command line
+### 6. Variables from the command line (10-variables.yaml)
 
 **Definition:** **`-e`** (extra vars) = pass a value **when you run** the playbook.
 
@@ -688,9 +776,9 @@ ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<
 | `-e "course=ansible from cmd"` | `ansible` ❌ (stops at the first space) |
 | `-e "course='ansible from cmd'"` | `ansible from cmd` ✅ |
 
-### 11.7 Which value wins?
+## Which value wins?
 
-**Definition:** **Variable precedence** = when the **same variable name** is defined in many places, Ansible picks the one with the **highest priority**.
+**Definition:** **Variable precedence** = when the **same variable name** is defined in many places, Ansible uses the one with the **highest priority**.
 
 ![Variable priority: command line wins, then task, file, prompt, play, inventory](images/05-variable-priority.svg)
 
@@ -699,7 +787,7 @@ command line  >  task  >  file  >  prompt  >  play  >  inventory
    (wins)                                              (lowest)
 ```
 
-**How we tested it** (`11-vars-preference.yaml` defines `course` in every place): run it, then remove the winner and run again. The next one in the list wins each time.
+**How we tested it** (`11-vars-preference.yaml` defines `course` in every place): run it, remove the winner, run again. The next one in the list wins each time.
 
 | Run | Prints | Winner |
 |---|---|---|
@@ -709,17 +797,24 @@ command line  >  task  >  file  >  prompt  >  play  >  inventory
 
 > **The command line always wins.** What you pass at run time overrides everything in files.
 
-## 12. What I learned
+---
 
+## What I learned
+
+**Concepts**
 - **Ansible** configures servers: packages, users, services. The app **code** comes separately.
 - **Control node** has Ansible; **managed nodes** only need **SSH + Python** (agentless).
-- **Inventory** = which servers, in groups. Check it with `ansible-inventory -i inventory.ini --graph`.
-- **Module** = one job (`ping`, `debug`, `package`, `service`). You say **what**; Ansible works out **how** (`dnf` or `apt`).
-- Results: `ok` = already correct, `changed` = Ansible fixed it, `failed` = error. Running twice is safe (**idempotent**).
-- **YAML**: `key: value` = map, `-` = list item, spaces (never tabs) show nesting.
-- **Playbook** → plays (`hosts`) → tasks (`name`) → modules. Run with `ansible-playbook -i inventory.ini <file>.yaml`.
-- `become: yes` = run as root. `connection: local` = run on the Ansible server itself, no SSH.
-- **Variables** `{{ name }}` come from 6 places. Priority: **command line > task > file > prompt > play > inventory**.
+- **Module** = one job (`ping`, `debug`, `package`, `service`). You say **what**; Ansible works out **how**. `ok` = already correct, `changed` = fixed, safe to run twice (**idempotent**).
+- **Inventory** = which servers, in groups. **Playbook** → plays (`hosts`) → tasks → modules, written in **YAML** (`key: value`, `-` = list, spaces not tabs).
+- **Workflow:** inventory + playbook → `ansible-playbook` → SSH → modules → PLAY RECAP.
+
+**Lab**
+- `roboshop-common` SG: inbound **22** (SSH) and **80** (HTTP).
+- Created the Ansible server and the frontend with `aws ec2 run-instances`; installed Ansible; cloned the code.
+- Ran `01`–`03` on the Ansible server itself (`connection: local`), then `04-nginx.yaml` on the frontend over SSH with `become: yes`.
+
+**Variables**
+- `{{ name }}`, defined in 6 places. Priority: **command line > task > file > prompt > play > inventory**.
 
 ```
 inventory (WHICH servers) ──┐

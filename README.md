@@ -25,7 +25,7 @@ Each day has an **interview-questions/** folder for quick revision.
 - [Day 17 - RoboShop v2: Shared Code in common.sh](day-17-roboshop-v2-common-functions/README.md)
 - [Day 18 - Shell Script: Log Cleanup, Backup, Crontab & Disk Usage Alert](day-18-shell-script-delete-old-logs/README.md)
 - [Day 19 - Shell Script Disadvantages & Ansible Introduction](day-19-shell-disadvantages-ansible-intro/README.md)
-- [Day 20 - Ansible Setup: Create the Server, Data Formats (XML, JSON, YAML) & Variables](day-20-ansible-data-formats-yaml/README.md)
+- [Day 20 - Ansible Basics: How Ansible Works, Modules, Inventory, Playbooks & Variables](day-20-ansible-data-formats-yaml/README.md)
 
 ## Projects
 
