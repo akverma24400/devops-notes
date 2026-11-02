@@ -583,6 +583,19 @@ ansible --version
 
 # Part 5: `ANSIBLE_CONFIG` (environment variable)
 
+**Problem:** `ansible.cfg` only works when you're **inside** `~/ansible-raw-lab`. `ANSIBLE_CONFIG` tells Ansible "always use this config file, from **any** folder".
+
+There are 2 ways to set it, and we try both:
+
+| Step | What we do | Why |
+|---|---|---|
+| 27 | `export` it | **Temporary**: works only in this terminal, gone when you log out. Good for a quick test. |
+| 28 | `unset` it | Clean up, so we can show the permanent way from a fresh start. |
+| 29 | add it to `~/.bashrc` | **Permanent**: `.bashrc` runs every time you log in, so it's set every time. This is what you'd use on a real Ansible server. |
+| 30 | delete it from `.bashrc` + `unset` | Lab clean-up only: we want the folder-based `ansible.cfg` again (and it would break if the lab folder is deleted). |
+
+**Remember:** `export` = this terminal only. `.bashrc` = every login.
+
 ### Step 27: Point Ansible to the config from any folder (temporary)
 
 ```bash
