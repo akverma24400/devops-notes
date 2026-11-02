@@ -125,9 +125,35 @@ Check every item **on your laptop** before Section 4.
 
 # 4. Create the EC2 servers with the AWS CLI
 
-> **Important:** run **all of Section 4 in one terminal on your laptop**. Each step saves values (AMI ID, security group IDs, instance IDs) into **shell variables** like `$AMI_ID`. Later commands reuse them. If you close the terminal, see [Section 14.1](#141-lost-your-variables).
+> **Important:** run **all of Section 4 in one terminal on your laptop**. Each step saves values (AMI ID, security group IDs, instance IDs) into **shell variables** like `$AMI_ID`. Later commands reuse them. If you close the terminal, see [Section 4.7](#47-new-terminal-load-all-ids-again).
 
-**Definition:** **Shell variable** = a name that stores a value in the current terminal. Set it with `NAME=value` (or `NAME=$(command)` to store a command's output), read it with `$NAME`.
+## 4.0 Read this first: how `$` and variables work
+
+**Definition:** **Shell variable** = a **box with a name** that stores a value in the current terminal.
+
+| You want to | Write | Example |
+|---|---|---|
+| **put** a value in the box | `NAME=value` (no `$`, no spaces around `=`) | `CONTROL_SG=sg-0a2587a6c7da61e37` |
+| **put a command's output** in the box | `NAME=$(command)` | `AMI_ID=$(aws ssm get-parameter ...)` |
+| **use** what's in the box | `$NAME` | `--security-group-ids $CONTROL_SG` |
+| **check** what's in the box | `echo $NAME` | `echo $CONTROL_SG` → `sg-0a2587a6c7da61e37` |
+
+**The golden rule:** a `$` is followed by a **variable name**, never by a real ID.
+
+| ✅ Correct | ✅ Also correct | ❌ Wrong |
+|---|---|---|
+| `--image-id $AMI_ID` | `--image-id ami-0c230065b91270bc6` | `--image-id $ami-0c230065b91270bc6` |
+| `--security-group-ids $CONTROL_SG` | `--security-group-ids sg-0a2587a6c7da61e37` | `--security-group-ids $sg-0a2587a6c7da61e37` |
+
+**Why is the wrong one wrong?** Bash reads `$ami` as a variable called `ami`. That variable doesn't exist, so it's **empty**, and AWS receives only `-0c230065b91270bc6`. These are real errors from my run:
+
+| Error | Cause | Fix |
+|---|---|---|
+| `InvalidAMIID.Malformed: Invalid id: "-0c230065b91270bc6" (expecting "ami-...")` | wrote `$ami-0c23...` | `$AMI_ID` or `ami-0c23...` (no `$`) |
+| `Value () for parameter groupId is invalid. The value cannot be empty` | wrote `$sg-0a25...`, or `$CONTROL_SG` was empty (new terminal) | `echo $CONTROL_SG` first; if empty, fill it again ([4.7](#47-new-terminal-load-all-ids-again)) |
+| `echo $CONTROL_ID` prints nothing | variable was never filled in **this** terminal | fill it again ([4.7](#47-new-terminal-load-all-ids-again)) |
+
+> **Habit:** before any command that uses `$SOMETHING`, run `echo $SOMETHING`. Empty line = stop and fill it first.
 
 ## 4.1 Step 1: Find the AMI and your public IP
 
@@ -149,11 +175,13 @@ echo "AMI: $AMI_ID   My IP: $MY_IP"
 - `--query 'Parameter.Value' --output text`: from the JSON answer, keep only the AMI ID as plain text.
 - `curl -s https://checkip.amazonaws.com`: asks AWS "what is my public IP?". We need it so that **only our laptop** may SSH into the control node.
 
-Expected:
+Expected (your values will differ):
 
 ```
-AMI: ami-0abcdef1234567890   My IP: 49.205.xx.xx
+AMI: ami-0c230065b91270bc6   My IP: 2.82.252.24
 ```
+
+If either one is empty, stop. Check `aws sts get-caller-identity` (AWS login) and your internet connection.
 
 ## 4.2 Step 2: Create an SSH key pair
 
@@ -202,9 +230,13 @@ CONTROL_SG=$(aws ec2 create-security-group \
   --description "Ansible control node" \
   --query 'GroupId' --output text)
 
+echo "Control SG: $CONTROL_SG"
+
 aws ec2 authorize-security-group-ingress \
   --group-id $CONTROL_SG --protocol tcp --port 22 --cidr ${MY_IP}/32
 ```
+
+Expected: `Control SG: sg-...`, then a JSON block with `"Return": true`, `"FromPort": 22` and `"CidrIpv4": "<your-ip>/32"`.
 
 **What does this do?**
 
@@ -230,6 +262,14 @@ aws ec2 authorize-security-group-ingress \
 echo "Control SG: $CONTROL_SG   Managed SG: $MANAGED_SG"
 ```
 
+Expected: two JSON blocks with `"Return": true` (one for port 22 with `"ReferencedGroupInfo"` = the control SG, one for port 80), then:
+
+```
+Control SG: sg-0a2587a6c7da61e37   Managed SG: sg-08bc86c7cf682a5d7
+```
+
+> If you run `create-security-group` a second time you get `InvalidGroup.Duplicate`: the group already exists. Don't create it again; load its ID with [Section 4.7](#47-new-terminal-load-all-ids-again).
+
 **What does this do?**
 
 - `--source-group $CONTROL_SG`: instead of an IP, the source is **another security group**. Any server that has `ansible-control-sg` attached may connect on port 22. Even if the control node's IP changes, the rule still works.
@@ -247,17 +287,33 @@ internet       ──22──► ✗ blocked (only MY_IP can SSH, and only to th
 
 **Definition:** **`aws ec2 run-instances`** = the AWS CLI command that **creates and starts** EC2 servers.
 
+**First, check that the boxes are filled** (see [4.0](#40-read-this-first-how--and-variables-work)):
+
 ```bash
-CONTROL_ID=$(aws ec2 run-instances \
+echo "AMI: $AMI_ID   Control SG: $CONTROL_SG"
+```
+
+✅ Both have values → continue. ❌ One is empty → fill it with [Section 4.7](#47-new-terminal-load-all-ids-again) first.
+
+**Then create the server:**
+
+```bash
+aws ec2 run-instances \
   --image-id $AMI_ID \
   --instance-type t3.micro \
   --key-name ansible-lab \
   --security-group-ids $CONTROL_SG \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ansible-control}]' \
-  --query 'Instances[0].InstanceId' --output text)
-
-echo "Control node: $CONTROL_ID"
+  --query 'Instances[0].InstanceId' --output text
 ```
+
+Expected: one instance ID on the screen:
+
+```
+i-097c69492f2cc5277
+```
+
+> **Run it only once.** Every run creates **another** server. If you're not sure whether it worked, check first: `aws ec2 describe-instances --filters "Name=tag:Name,Values=ansible-control" "Name=instance-state-name,Values=pending,running" --query 'Reservations[].Instances[].InstanceId' --output text`
 
 ### Understand every option
 
@@ -269,35 +325,43 @@ echo "Control node: $CONTROL_ID"
 | `--security-group-ids $CONTROL_SG` | attach the control node firewall |
 | `--tag-specifications ... Value=ansible-control` | the **Name** shown in the EC2 console |
 | `--query 'Instances[0].InstanceId'` | from the big JSON output, keep only the instance ID (`Instances` is a list, `[0]` = first item) |
-| `--output text` | print it as plain text so it can be stored in `$CONTROL_ID` |
+| `--output text` | print it as plain text |
 
-Expected:
-
-```
-Control node: i-0a1b2c3d4e5f67890
-```
+We save the ID into a box in [Step 4.6](#46-step-6-save-the-ids-and-get-the-ip-addresses), once all 3 servers exist.
 
 ## 4.5 Step 5: Launch the two managed nodes
 
-Same command; only the **security group** and the **Name** tag change.
+Same command; only the **security group** (`$MANAGED_SG`) and the **Name** tag change.
+
+**Check first:**
 
 ```bash
-NODE1_ID=$(aws ec2 run-instances \
-  --image-id $AMI_ID --instance-type t3.micro --key-name ansible-lab \
-  --security-group-ids $MANAGED_SG \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node1}]' \
-  --query 'Instances[0].InstanceId' --output text)
-
-NODE2_ID=$(aws ec2 run-instances \
-  --image-id $AMI_ID --instance-type t3.micro --key-name ansible-lab \
-  --security-group-ids $MANAGED_SG \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node2}]' \
-  --query 'Instances[0].InstanceId' --output text)
-
-aws ec2 wait instance-running --instance-ids $CONTROL_ID $NODE1_ID $NODE2_ID && echo "All 3 running"
+echo "AMI: $AMI_ID   Managed SG: $MANAGED_SG"
 ```
 
-**What does `aws ec2 wait instance-running` do?** It **pauses** until all 3 servers reach the `running` state, then continues. Without it, the next command might ask for IPs before the servers are ready.
+**Create node1 and node2:**
+
+```bash
+aws ec2 run-instances \
+  --image-id $AMI_ID \
+  --instance-type t3.micro \
+  --key-name ansible-lab \
+  --security-group-ids $MANAGED_SG \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node1}]' \
+  --query 'Instances[0].InstanceId' --output text
+
+aws ec2 run-instances \
+  --image-id $AMI_ID \
+  --instance-type t3.micro \
+  --key-name ansible-lab \
+  --security-group-ids $MANAGED_SG \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node2}]' \
+  --query 'Instances[0].InstanceId' --output text
+```
+
+Expected: two more IDs, one per line (`i-0...`).
+
+> ⚠️ node1 and node2 use **`$MANAGED_SG`**, not `$CONTROL_SG`. A wrong SG here means the control node can't SSH to them later.
 
 **Notice what we did NOT do:** we did not install anything on node1 or node2. Amazon Linux 2023 already has **SSH** and **python3**, which is all Ansible needs on a managed node.
 
@@ -309,43 +373,116 @@ aws ec2 wait instance-running --instance-ids $CONTROL_ID $NODE1_ID $NODE2_ID && 
 
 > **Prefer the AWS console?** EC2 → **Launch instance** → Name `ansible-control` → AMI **Amazon Linux 2023** → type `t3.micro` → key pair `ansible-lab` → **Select existing security group** `ansible-control-sg` → Launch. Repeat for `node1` and `node2` with `ansible-managed-sg`. Same result.
 
-## 4.6 Step 6: Get the IP addresses
+## 4.6 Step 6: Save the IDs and get the IP addresses
 
 **Definition:**
 - **Public IP** = reachable from the internet. Used for: laptop → control node, browser → nginx.
 - **Private IP** = reachable only inside the VPC. Used for: control node → managed nodes (faster, free, not exposed).
 
-```bash
-aws ec2 describe-instances \
-  --instance-ids $CONTROL_ID $NODE1_ID $NODE2_ID \
-  --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value, PrivateIpAddress, PublicIpAddress]' \
-  --output table
+**1. Wait until all 3 servers are running:**
 
-CONTROL_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $CONTROL_ID \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+```bash
+aws ec2 wait instance-running \
+  --filters "Name=tag:Name,Values=ansible-control,node1,node2" "Name=instance-state-name,Values=pending,running" \
+  && echo "All 3 running"
 ```
 
-**What does this do?** `describe-instances` returns everything about the servers. The `--query` picks just **Name, private IP, public IP** for each one, and `--output table` prints them neatly. The second command saves the control node's public IP for the next section.
+**What does `aws ec2 wait instance-running` do?** It **pauses** until the servers reach the `running` state, then prints `All 3 running`. Without it, the next commands might ask for IPs before the servers have them.
+
+**2. Show all 3 servers with their IPs:**
+
+```bash
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=ansible-control,node1,node2" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value, InstanceId, PrivateIpAddress, PublicIpAddress]' \
+  --output table
+```
+
+**What does this do?** `describe-instances` returns everything about your servers. `--filters` keeps only our 3 running servers (by **Name** tag). `--query` picks **Name, instance ID, private IP, public IP**, and `--output table` prints them neatly.
 
 Expected:
 
 ```
--------------------------------------------------------
-|                  DescribeInstances                  |
-+------------------+----------------+-----------------+
-|  ansible-control |  172.31.30.10  |  54.210.11.22   |
-|  node1           |  172.31.16.19  |  3.88.44.55     |
-|  node2           |  172.31.20.45  |  18.207.66.77   |
-+------------------+----------------+-----------------+
+-----------------------------------------------------------------------------
+|                             DescribeInstances                             |
++-----------------+-----------------------+---------------+-----------------+
+|  ansible-control|  i-097c69492f2cc5277  |  172.31.30.10 |  54.210.11.22   |
+|  node1          |  i-0bbb...            |  172.31.16.19 |  3.88.44.55     |
+|  node2          |  i-0ccc...            |  172.31.20.45 |  18.207.66.77   |
++-----------------+-----------------------+---------------+-----------------+
 ```
 
-**Write your values down.** The rest of this lab uses the example IPs `172.31.16.19` (node1) and `172.31.20.45` (node2). **Replace them with yours.**
+> Each name must appear **once**. If a name appears twice, you created it twice: terminate the extra one (`aws ec2 terminate-instances --instance-ids <extra-id>`).
 
-| Server | Private IP | Public IP |
+**3. Save the IDs and the control node's public IP into boxes** (Ansible needs them in Section 5; cleanup needs them in Section 14). Run [Section 4.7](#47-new-terminal-load-all-ids-again) now. It loads everything by name, with no copy-paste.
+
+**4. Write your values down.** The rest of this lab uses the example IPs `172.31.16.19` (node1) and `172.31.20.45` (node2). **Replace them with yours.**
+
+| Server | Instance ID | Private IP | Public IP |
+|---|---|---|---|
+| ansible-control | | | |
+| node1 | | | |
+| node2 | | | |
+
+## 4.7 New terminal? Load all IDs again
+
+Variables live only in the terminal where you set them. In a **new terminal** (or after a mistake), this block **looks everything up in AWS by name** and fills all the boxes. It's safe to run any time; it doesn't create anything.
+
+```bash
+AMI_ID=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query 'Parameter.Value' --output text)
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+
+CONTROL_SG=$(aws ec2 describe-security-groups --group-names ansible-control-sg --query 'SecurityGroups[0].GroupId' --output text)
+MANAGED_SG=$(aws ec2 describe-security-groups --group-names ansible-managed-sg --query 'SecurityGroups[0].GroupId' --output text)
+
+FILTER="Name=instance-state-name,Values=pending,running,stopped"
+CONTROL_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=ansible-control" "$FILTER" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+NODE1_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=node1" "$FILTER" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+NODE2_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=node2" "$FILTER" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+CONTROL_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $CONTROL_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+
+echo "AMI_ID=$AMI_ID  MY_IP=$MY_IP"
+echo "CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG"
+echo "CONTROL_ID=$CONTROL_ID  NODE1_ID=$NODE1_ID  NODE2_ID=$NODE2_ID"
+echo "CONTROL_PUBLIC_IP=$CONTROL_PUBLIC_IP"
+```
+
+| You see | Means |
+|---|---|
+| a real value (`sg-...`, `i-...`, an IP) | ✅ box is filled |
+| `None` | that thing doesn't exist yet (e.g. you haven't launched `node1`) → create it first |
+| `InvalidGroup.NotFound` | the security group isn't created yet → do Step 3 |
+
+**Or fill a box by hand**, with the real value and no `$` on the left:
+
+```bash
+CONTROL_ID=i-097c69492f2cc5277
+echo $CONTROL_ID
+```
+
+### My lab values (from my run, us-east-1)
+
+These are the real IDs from my lab, ready to paste. **Your IDs will be different**: use the block above to load yours.
+
+```bash
+AMI_ID=ami-0c230065b91270bc6          # Amazon Linux 2023
+CONTROL_SG=sg-0a2587a6c7da61e37       # ansible-control-sg
+MANAGED_SG=sg-08bc86c7cf682a5d7       # ansible-managed-sg
+CONTROL_ID=i-097c69492f2cc5277        # ansible-control
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+
+echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$CONTROL_ID  MY_IP=$MY_IP"
+```
+
+| Name | Type | ID |
 |---|---|---|
-| ansible-control | | |
-| node1 | | |
-| node2 | | |
+| Amazon Linux 2023 | AMI | `ami-0c230065b91270bc6` |
+| `ansible-lab` | key pair | `ansible-lab.pem` on my laptop |
+| `ansible-control-sg` | security group | `sg-0a2587a6c7da61e37` |
+| `ansible-managed-sg` | security group | `sg-08bc86c7cf682a5d7` |
+| `ansible-control` | EC2 instance | `i-097c69492f2cc5277` |
+| `node1` | EC2 instance | *(add after launch)* |
+| `node2` | EC2 instance | *(add after launch)* |
 
 # 5. Prepare the control node
 
@@ -1167,7 +1304,7 @@ ansible all -i inventory/production/hosts -m ping
 
 **Why?** EC2 servers cost money while they run, even when you're not using them. Delete everything the lab created.
 
-Run from your **laptop**, in the same terminal as Section 4:
+Run from your **laptop**. First check the boxes are filled: `echo $CONTROL_ID $NODE1_ID $NODE2_ID $CONTROL_SG $MANAGED_SG`. If any are empty, run [Section 4.7](#47-new-terminal-load-all-ids-again) first.
 
 ```bash
 # 1. delete the 3 servers and wait until they are fully gone
@@ -1193,20 +1330,7 @@ rm -f ansible-lab.pem
 
 ## 14.1 Lost your variables?
 
-If you closed the terminal, `$CONTROL_ID` etc. are empty. Get them back:
-
-```bash
-aws ec2 describe-instances \
-  --filters "Name=tag:Name,Values=ansible-control,node1,node2" \
-            "Name=instance-state-name,Values=pending,running,stopped" \
-  --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value, InstanceId]' \
-  --output table
-
-CONTROL_SG=$(aws ec2 describe-security-groups --group-names ansible-control-sg --query 'SecurityGroups[0].GroupId' --output text)
-MANAGED_SG=$(aws ec2 describe-security-groups --group-names ansible-managed-sg --query 'SecurityGroups[0].GroupId' --output text)
-```
-
-Then set `CONTROL_ID=i-...`, `NODE1_ID=i-...`, `NODE2_ID=i-...` from the table and run the cleanup again.
+If you closed the terminal, `$CONTROL_ID`, `$MANAGED_SG` etc. are empty. Run the block in [Section 4.7](#47-new-terminal-load-all-ids-again) to load them all again by name, check that the `echo` lines show real values, then run the cleanup above.
 
 # 15. Comparison tables
 
