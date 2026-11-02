@@ -489,6 +489,20 @@ cd ~/ansible-code
 
 ### Step 4: Print facts
 
+**Why print them?** When the play starts, Ansible **gathers the facts and stores them** in `ansible_facts` (in memory, until the playbook ends). But we **can't see them on screen**: `TASK [Gathering Facts]` only shows `ok: [localhost]`.
+
+**If you want to see what it gathered, print it with `debug`.** That's what this playbook does.
+
+```
+Gathering Facts → stored in ansible_facts (not shown on screen)
+      ↓
+debug task      → prints them so you can see them
+      ↓
+playbook ends   → facts gone from memory
+```
+
+> In real playbooks we **don't print** facts, we just **use** them (e.g. `when: ansible_facts['os_family'] == "RedHat"`). Printing is only to **learn the fact names** and **check their values** (debugging).
+
 `12-gather-facts.yaml`:
 
 ```yaml
