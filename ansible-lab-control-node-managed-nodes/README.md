@@ -848,6 +848,5 @@ rm -f ansible-lab.pem
 | `Permission denied (publickey)` | wrong key or user | test `ssh -i ~/.ssh/ansible_lab ec2-user@<ip>`; `chmod 400` the key |
 | `aws: Unable to locate credentials` | ran an `aws` command on the Ansible server | `exit` to your laptop terminal and run it there |
 | `no hosts matched` / `config file = None` | ran Ansible from the wrong folder (e.g. inside `playbooks/`) | `cd ~/ansible-raw-lab` (the folder with `ansible.cfg`) |
-| `config file = None` | not in the project folder | `cd ~/ansible-raw-lab` |
 | `no such identity: ... ansible_lab` | wrong `private_key_file` path | `ls ~/.ssh/` and fix `ansible.cfg` |
 | browser can't open nginx | port 80 not open / wrong IP | Step 5; use the node's **public** IP |
