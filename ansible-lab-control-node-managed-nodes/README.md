@@ -232,7 +232,7 @@ sudo dnf install telnet -y
 telnet 172.31.5.204 22
 ```
 
-**What it does:** tries to open a TCP connection to port 22 on node1. This proves the **security group allows it**. It does **not** test the key. Exit with `Ctrl + ]`, then `quit`.
+**What it does:** tries to open a TCP connection to port 22 on node1. This proves the **security group allows it**. It does **not** test the key. Exit with `Ctrl + ]`, then `quit`. (Non-US keyboard? Press `Ctrl + C` or `Enter`: the SSH server doesn't understand it and closes the connection: `Connection closed by foreign host.`)
 **Expected:** `Connected to 172.31.5.204.` and `SSH-2.0-OpenSSH...`
 
 ### Step 15: SSH to node1 and node2 with the key
