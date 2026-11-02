@@ -64,54 +64,45 @@ chmod 400 ansible-lab.pem
 **What it does:** AWS creates a key pair called `ansible-lab`. AWS keeps the **public key** (and puts it on every server we launch with it). The **private key** is saved to `ansible-lab.pem` on your laptop; AWS shows it **only once**. `chmod 400` makes it readable only by you, otherwise SSH refuses to use it.
 **Expected:** `ls -l ansible-lab.pem` → `-r-------- ... ansible-lab.pem`
 
-### Step 4: Create the control node security group
+### Step 4: Create the control node security group + allow SSH from your IP
 
 ```bash
-aws ec2 create-security-group --group-name ansible-control-sg --description "Ansible control node" --query 'GroupId' --output text
+aws ec2 create-security-group --group-name ansible-control-sg --description "Ansible control node"
+aws ec2 authorize-security-group-ingress --group-name ansible-control-sg --protocol tcp --port 22 --cidr 2.82.252.24/32
 ```
 
-**What it does:** creates a firewall (security group) for the control node and prints its ID.
-**Expected:** `sg-0a2587a6c7da61e37`
+**What it does:**
 
-### Step 5: Allow SSH to the control node only from your IP
+| Command | Meaning |
+|---|---|
+| `create-security-group --group-name ansible-control-sg` | creates a firewall (security group) called `ansible-control-sg` for the control node |
+| `authorize-security-group-ingress ... --port 22 --cidr 2.82.252.24/32` | **inbound rule**: SSH (port 22) allowed **only from your IP** (`/32` = exactly one IP, from Step 2) |
+
+**Expected:** `"GroupId": "sg-0a2587a6c7da61e37"`, then `"Return": true`
+
+### Step 5: Create the managed nodes security group + allow SSH and HTTP
 
 ```bash
-aws ec2 authorize-security-group-ingress --group-id sg-0a2587a6c7da61e37 --protocol tcp --port 22 --cidr 2.82.252.24/32
+aws ec2 create-security-group --group-name ansible-managed-sg --description "Ansible managed nodes"
+aws ec2 authorize-security-group-ingress --group-name ansible-managed-sg --protocol tcp --port 22 --source-group ansible-control-sg
+aws ec2 authorize-security-group-ingress --group-name ansible-managed-sg --protocol tcp --port 80 --cidr 0.0.0.0/0
 ```
 
-**What it does:** adds an **inbound rule**: port 22 (SSH) is allowed only from your IP (`/32` = exactly one IP). Nobody else on the internet can SSH to the control node.
-**Expected:** JSON with `"Return": true`
+**What it does:** creates **one** security group that we attach to **both** node1 and node2:
 
-### Step 6: Create the managed nodes security group
+| Command | Meaning |
+|---|---|
+| `create-security-group --group-name ansible-managed-sg` | creates the firewall for the managed nodes |
+| `--port 22 --source-group ansible-control-sg` | SSH allowed **only from servers that have `ansible-control-sg`**, so only the control node can SSH to the nodes |
+| `--port 80 --cidr 0.0.0.0/0` | HTTP from anywhere, only so we can **open the nginx page in a browser** at the end (installing nginx doesn't need it) |
 
-```bash
-aws ec2 create-security-group --group-name ansible-managed-sg --description "Ansible managed nodes" --query 'GroupId' --output text
-```
+**Expected:** `"GroupId": "sg-08bc86c7cf682a5d7"`, then `"Return": true` twice
 
-**What it does:** creates the firewall for node1 and node2 and prints its ID.
-**Expected:** `sg-08bc86c7cf682a5d7`
-
-### Step 7: Allow SSH to the nodes only from the control node
-
-```bash
-aws ec2 authorize-security-group-ingress --group-id sg-08bc86c7cf682a5d7 --protocol tcp --port 22 --source-group sg-0a2587a6c7da61e37
-```
-
-**What it does:** port 22 on node1/node2 is allowed only from servers that have the **control node's security group**. So only the control node can SSH to them.
-**Expected:** JSON with `"Return": true` and `"ReferencedGroupInfo"`
-
-### Step 8: Allow HTTP (port 80) to the nodes
-
-```bash
-aws ec2 authorize-security-group-ingress --group-id sg-08bc86c7cf682a5d7 --protocol tcp --port 80 --cidr 0.0.0.0/0
-```
-
-**What it does:** opens port 80 from anywhere, so we can see the nginx page in a browser at the end.
-**Expected:** JSON with `"Return": true`
+> `--group-name` works in the **default VPC**, so we use names instead of copying `sg-...` IDs. Write down both `GroupId`s; Steps 6–8 use them.
 
 > **Outbound rules:** nothing to add. Every new security group already allows **all outbound** traffic, and security groups are **stateful** (replies are allowed back automatically).
 
-### Step 9: Create the control node
+### Step 6: Create the control node
 
 ```bash
 aws ec2 run-instances \
@@ -138,7 +129,7 @@ aws ec2 run-instances \
 
 > Run it **once**. Every run creates another server.
 
-### Step 10: Create node1
+### Step 7: Create node1
 
 ```bash
 aws ec2 run-instances \
@@ -150,10 +141,10 @@ aws ec2 run-instances \
   --query 'Instances[0].InstanceId' --output text
 ```
 
-**What it does:** same as Step 9, but with the **managed** security group and the name `node1`.
+**What it does:** same as Step 6, but with the **managed** security group and the name `node1`.
 **Expected:** `i-094cf172053ec2ed0`
 
-### Step 11: Create node2
+### Step 8: Create node2
 
 ```bash
 aws ec2 run-instances \
@@ -165,10 +156,10 @@ aws ec2 run-instances \
   --query 'Instances[0].InstanceId' --output text
 ```
 
-**What it does:** same as Step 10, name `node2`.
+**What it does:** same as Step 7, name `node2`.
 **Expected:** `i-042255565324b6c10`
 
-### Step 12: Get the IP addresses
+### Step 9: Get the IP addresses
 
 ```bash
 aws ec2 describe-instances \
@@ -194,7 +185,7 @@ If a server is missing, wait 30 seconds and run it again.
 
 # Part 2: Prepare the control node
 
-### Step 13: Copy the private key to the control node (on your laptop)
+### Step 10: Copy the private key to the control node (on your laptop)
 
 ```bash
 scp -i ansible-lab.pem ansible-lab.pem ec2-user@44.192.106.237:/home/ec2-user/.ssh/ansible_lab
@@ -203,7 +194,7 @@ scp -i ansible-lab.pem ansible-lab.pem ec2-user@44.192.106.237:/home/ec2-user/.s
 **What it does:** `scp` copies a file over SSH. It logs in to the control node with `ansible-lab.pem` and copies that same key there as `~/.ssh/ansible_lab`. The control node needs it to SSH into node1 and node2. Type `yes` the first time.
 **Expected:** `ansible-lab.pem   100%  1679 ...`
 
-### Step 14: Log in to the control node
+### Step 11: Log in to the control node
 
 ```bash
 ssh -i ansible-lab.pem ec2-user@44.192.106.237
@@ -212,7 +203,7 @@ ssh -i ansible-lab.pem ec2-user@44.192.106.237
 **What it does:** opens a terminal on the control node. **All the next steps run here.**
 **Expected:** prompt `[ec2-user@ip-172-31-14-80 ~]$`
 
-### Step 15: Protect the key
+### Step 12: Protect the key
 
 ```bash
 chmod 400 ~/.ssh/ansible_lab
@@ -222,7 +213,7 @@ ls -lah ~/.ssh/
 **What it does:** makes the key readable only by `ec2-user` (SSH refuses keys others can read), then lists the folder.
 **Expected:** `ansible_lab` (`-r--------`, the private key) and `authorized_keys` (the public key AWS put here)
 
-### Step 16: Install Ansible
+### Step 13: Install Ansible
 
 ```bash
 sudo dnf install ansible-core -y
@@ -232,7 +223,7 @@ ansible --version
 **What it does:** `dnf` installs Ansible (engine + built-in modules) as root. `ansible --version` confirms the install and shows which config file is used.
 **Expected:** `ansible [core 2.x.x]` and `config file = None` (no `ansible.cfg` yet)
 
-### Step 17: Check port 22 on node1 is reachable
+### Step 14: Check port 22 on node1 is reachable
 
 ```bash
 sudo dnf install telnet -y
@@ -242,7 +233,7 @@ telnet 172.31.5.204 22
 **What it does:** tries to open a TCP connection to port 22 on node1. This proves the **security group allows it**. It does **not** test the key. Exit with `Ctrl + ]`, then `quit`.
 **Expected:** `Connected to 172.31.5.204.` and `SSH-2.0-OpenSSH...`
 
-### Step 18: SSH to node1 and node2 with the key
+### Step 15: SSH to node1 and node2 with the key
 
 ```bash
 ssh -i ~/.ssh/ansible_lab ec2-user@172.31.5.204
@@ -258,7 +249,7 @@ exit
 
 # Part 3: Ansible without `ansible.cfg`
 
-### Step 19: Create the project folder
+### Step 16: Create the project folder
 
 ```bash
 mkdir -p ~/ansible-raw-lab/inventory
@@ -269,7 +260,7 @@ pwd
 **What it does:** creates the project folder and an `inventory` folder inside it, then moves into the project.
 **Expected:** `/home/ec2-user/ansible-raw-lab`
 
-### Step 20: Create the inventory
+### Step 17: Create the inventory
 
 ```bash
 cat > inventory/hosts <<'EOF'
@@ -283,7 +274,7 @@ cat inventory/hosts
 **What it does:** writes the **inventory**, the list of servers Ansible manages. `[managed_nodes]` is the group name; `node1` is a short name shown in the output; `ansible_host` is the real private IP Ansible connects to.
 **Expected:** the 3 lines above.
 
-### Step 21: Check the inventory
+### Step 18: Check the inventory
 
 ```bash
 ansible-inventory -i inventory/hosts --graph
@@ -300,7 +291,7 @@ ansible-inventory -i inventory/hosts --graph
   |  |--node2
 ```
 
-### Step 22: Ping both nodes (the long way)
+### Step 19: Ping both nodes (the long way)
 
 ```bash
 ansible all \
@@ -327,7 +318,7 @@ node1 | SUCCESS => { "changed": false, "ping": "pong" }
 node2 | SUCCESS => { "changed": false, "ping": "pong" }
 ```
 
-### Step 23: Run two more commands (see the repetition)
+### Step 20: Run two more commands (see the repetition)
 
 ```bash
 ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --private-key /home/ec2-user/.ssh/ansible_lab -m command -a "uptime"
@@ -341,7 +332,7 @@ ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --priv
 
 # Part 4: Ansible with `ansible.cfg`
 
-### Step 24: Create `ansible.cfg`
+### Step 21: Create `ansible.cfg`
 
 ```bash
 cd ~/ansible-raw-lab
@@ -364,16 +355,16 @@ cat ansible.cfg
 | `private_key_file` | `--private-key` |
 | `host_key_checking = False` | typing `yes` for new servers (OK for labs, keep it on in production) |
 
-### Step 25: Check Ansible found it
+### Step 22: Check Ansible found it
 
 ```bash
 ansible --version
 ```
 
 **What it does:** shows which config file Ansible is using.
-**Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg` (was `None` in Step 16)
+**Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg` (was `None` in Step 13)
 
-### Step 26: See only the settings you changed
+### Step 23: See only the settings you changed
 
 ```bash
 ansible-config dump --only-changed
@@ -381,17 +372,17 @@ ansible-config dump --only-changed
 
 **What it does:** lists the settings that differ from Ansible's defaults, which are the 4 from your `ansible.cfg`.
 
-### Step 27: Ping again (the short way)
+### Step 24: Ping again (the short way)
 
 ```bash
 ansible all -m ping
 ansible all -m command -a "uptime"
 ```
 
-**What it does:** the same as Steps 22–23, but inventory, user and key now come **from `ansible.cfg`**.
+**What it does:** the same as Steps 19–20, but inventory, user and key now come **from `ansible.cfg`**.
 **Expected:** `SUCCESS` / `pong` for node1 and node2.
 
-### Step 28: Show that the command line overrides `ansible.cfg`
+### Step 25: Show that the command line overrides `ansible.cfg`
 
 ```bash
 printf "[managed_nodes]\nnode1 ansible_host=172.31.5.204\n" > inventory/only-node1
@@ -401,7 +392,7 @@ ansible all -i inventory/only-node1 -m ping
 **What it does:** creates an inventory with only node1 and passes it with `-i`. The flag **wins** over `inventory =` in `ansible.cfg`.
 **Expected:** only `node1 | SUCCESS`
 
-### Step 29: Show that the folder decides which `ansible.cfg` is used
+### Step 26: Show that the folder decides which `ansible.cfg` is used
 
 ```bash
 cd ~
@@ -417,7 +408,7 @@ ansible --version
 
 # Part 5: `ANSIBLE_CONFIG` (environment variable)
 
-### Step 30: Point Ansible to the config from any folder (temporary)
+### Step 27: Point Ansible to the config from any folder (temporary)
 
 ```bash
 cd ~
@@ -430,7 +421,7 @@ ansible all -m ping
 **What it does:** `export` sets an environment variable in **this terminal only**. Ansible checks `ANSIBLE_CONFIG` first, so it uses our file even from `~`.
 **Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg` and `pong` from both nodes.
 
-### Step 31: Remove it
+### Step 28: Remove it
 
 ```bash
 unset ANSIBLE_CONFIG
@@ -441,7 +432,7 @@ ansible --version
 **What it does:** `unset` deletes the variable from the current terminal.
 **Expected:** empty line, then `config file = None` (we're still in `~`)
 
-### Step 32: Make it permanent with `.bashrc`
+### Step 29: Make it permanent with `.bashrc`
 
 ```bash
 echo 'export ANSIBLE_CONFIG=/home/ec2-user/ansible-raw-lab/ansible.cfg' >> ~/.bashrc
@@ -452,7 +443,7 @@ printenv ANSIBLE_CONFIG
 **What it does:** `>>` adds the line to the **end** of `~/.bashrc` (a single `>` would overwrite the file!). Bash runs `.bashrc` every time a new terminal opens. `source` runs it **now**, so no reboot or re-login is needed.
 **Expected:** `/home/ec2-user/ansible-raw-lab/ansible.cfg`
 
-### Step 33: Undo it
+### Step 30: Undo it
 
 ```bash
 sed -i '/ANSIBLE_CONFIG/d' ~/.bashrc
@@ -467,7 +458,7 @@ printenv ANSIBLE_CONFIG
 
 # Part 6: Install nginx with a playbook
 
-### Step 34: Write the playbook
+### Step 31: Write the playbook
 
 ```bash
 cd ~/ansible-raw-lab
@@ -492,7 +483,7 @@ EOF
 
 **What it does:** creates a playbook that runs on the `managed_nodes` group as root (`become: yes`). The `package` module installs nginx; the `service` module starts it now (`started`) and on every boot (`enabled`).
 
-### Step 35: Run the playbook
+### Step 32: Run the playbook
 
 ```bash
 ansible-playbook playbooks/nginx.yaml
@@ -501,7 +492,7 @@ ansible-playbook playbooks/nginx.yaml
 **What it does:** runs the playbook on node1 and node2. No `-i`, `-u` or `--private-key` needed, because `ansible.cfg` provides them.
 **Expected:** `changed=2` for each node. Run it again → `changed=0` (already done: **idempotent**).
 
-### Step 36: Check nginx
+### Step 33: Check nginx
 
 ```bash
 curl -I http://172.31.5.204
@@ -515,7 +506,7 @@ curl -I http://172.31.10.232
 
 # Part 7: Clean up (on your laptop)
 
-### Step 37: Delete the servers
+### Step 34: Delete the servers
 
 ```bash
 aws ec2 terminate-instances --instance-ids i-0111ec6253b296e51 i-094cf172053ec2ed0 i-042255565324b6c10
@@ -524,7 +515,7 @@ aws ec2 wait instance-terminated --instance-ids i-0111ec6253b296e51 i-094cf17205
 
 **What it does:** deletes the 3 servers, then **waits** until they're fully gone (security groups can't be deleted while a server still uses them).
 
-### Step 38: Delete the security groups
+### Step 35: Delete the security groups
 
 ```bash
 aws ec2 delete-security-group --group-id sg-08bc86c7cf682a5d7
@@ -533,7 +524,7 @@ aws ec2 delete-security-group --group-id sg-0a2587a6c7da61e37
 
 **What it does:** deletes the managed SG **first** (its rule points to the control SG), then the control SG.
 
-### Step 39: Delete the key pair
+### Step 36: Delete the key pair
 
 ```bash
 aws ec2 delete-key-pair --key-name ansible-lab
@@ -550,9 +541,9 @@ rm -f ansible-lab.pem
 |---|---|---|
 | `InvalidAMIID.Malformed: Invalid id: "-0c23..."` | typed `$ami-...` (a `$` before a real ID) | remove the `$` |
 | `parameter groupId is invalid. The value cannot be empty` | typed `$sg-...` | remove the `$` |
-| `ssh`/`scp` to the control node: `Connection timed out` | your laptop's IP changed | redo Step 2 + Step 5 with the new IP |
+| `ssh`/`scp` to the control node: `Connection timed out` | your laptop's IP changed | redo Step 2, then add the new IP to the control SG (Step 4, second command) |
 | `telnet`/`ansible`: `Connection timed out` to a node | wrong SG or wrong IP | node needs `ansible-managed-sg`; use the **private** IP |
 | `Permission denied (publickey)` | wrong key or user | test `ssh -i ~/.ssh/ansible_lab ec2-user@<ip>`; `chmod 400` the key |
 | `config file = None` | not in the project folder | `cd ~/ansible-raw-lab` |
 | `no such identity: ... ansible_lab` | wrong `private_key_file` path | `ls ~/.ssh/` and fix `ansible.cfg` |
-| browser can't open nginx | port 80 not open / wrong IP | Step 8; use the node's **public** IP |
+| browser can't open nginx | port 80 not open / wrong IP | Step 5; use the node's **public** IP |
