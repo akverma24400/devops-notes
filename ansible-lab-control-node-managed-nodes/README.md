@@ -67,7 +67,7 @@ chmod 400 ansible-lab.pem
 ### Step 4: Create the control node security group + allow SSH from your IP
 
 ```bash
-aws ec2 create-security-group --group-name ansible-control-sg --description "Ansible control node"
+aws ec2 create-security-group --group-name ansible-control-sg --description "Ansible control node" && \
 aws ec2 authorize-security-group-ingress --group-name ansible-control-sg --protocol tcp --port 22 --cidr 2.82.252.24/32
 ```
 
@@ -80,11 +80,13 @@ aws ec2 authorize-security-group-ingress --group-name ansible-control-sg --proto
 
 **Expected:** `"GroupId": "sg-0a2587a6c7da61e37"`, then `"Return": true`
 
+> **`&& \`** joins the commands into **one**: `&&` = run the next part **only if the previous one succeeded** (if the SG can't be created, no rule is added); `\` = the command continues on the next line. AWS has no single call that creates an SG **with** rules, so we chain them.
+
 ### Step 5: Create the managed nodes security group + allow SSH and HTTP
 
 ```bash
-aws ec2 create-security-group --group-name ansible-managed-sg --description "Ansible managed nodes"
-aws ec2 authorize-security-group-ingress --group-name ansible-managed-sg --protocol tcp --port 22 --source-group ansible-control-sg
+aws ec2 create-security-group --group-name ansible-managed-sg --description "Ansible managed nodes" && \
+aws ec2 authorize-security-group-ingress --group-name ansible-managed-sg --protocol tcp --port 22 --source-group ansible-control-sg && \
 aws ec2 authorize-security-group-ingress --group-name ansible-managed-sg --protocol tcp --port 80 --cidr 0.0.0.0/0
 ```
 
