@@ -29,6 +29,7 @@ Each day has an **interview-questions/** folder for quick revision.
 
 ## Projects
 
+- [Ansible Lab - control node + 2 managed nodes on AWS, SSH keys & ansible.cfg, step by step from an empty account](ansible-lab-control-node-managed-nodes/README.md)
 - [RoboShop - 3 tier microservices setup (MongoDB, Redis, MySQL, RabbitMQ, Nginx)](roboshop-docs/README.md)
 - [RoboShop with Shell Scripts - project repo (AWS CLI + Bash automation)](https://github.com/Abhignadumpala/shellscript-roboshop-v1)
 - [RoboShop Debugging Guide - which error → what to check (with diagrams)](roboshop-debugging-guide/README.md)

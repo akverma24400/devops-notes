@@ -2,7 +2,7 @@
 
 > **In short:** Running an app needs two things: the **code** and the **configuration** of the server. Ansible does the configuration. We create servers with the **AWS CLI**, tell Ansible which machines to target in the **inventory**, and in Ansible **everything is a module** (or a collection of modules). Playbooks are written in **YAML**, so we compared the same student details written in **XML**, **JSON** and **YAML**: `[]` is a **list**, `{}` is a **map/object**. Ansible also has programming basics: variables, data types, conditions, loops, functions and error handling, starting with **variables**.
 
-**More in this folder:** [Interview questions](interview-questions/README.md)
+**More in this folder:** [Interview questions](interview-questions/README.md) · **Hands-on lab:** [Control node + managed nodes with SSH keys & ansible.cfg](../ansible-lab-control-node-managed-nodes/README.md)
 
 ## Table of Contents
 
