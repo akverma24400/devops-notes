@@ -220,27 +220,12 @@ localhost
 | `ansible roboshop -i inventory.ini -m ping` | all RoboShop servers |
 | `ansible all -i inventory.ini -m ping` | every server in the file |
 
-### Host variables: how to connect to each host
-
-You can put connection settings next to each host:
-
-```ini
-[webservers]
-web1.example.com ansible_user=ubuntu ansible_port=22
-web2.example.com ansible_user=ec2-user ansible_port=2222
-
-[databases]
-db1.example.com ansible_user=admin ansible_ssh_private_key_file=/home/admin/.ssh/id_rsa
-```
-
-| Variable | Means |
-|---|---|
-| `ansible_host` | the real IP to connect to (when the inventory name is a short alias like `node1`) |
-| `ansible_user` | SSH username |
-| `ansible_port` | SSH port (default 22) |
-| `ansible_ssh_private_key_file` | private key to log in with |
-
 ### Types of inventory: static vs dynamic
+
+**Definition:** Ansible has **2 types** of inventory, depending on whether the list of servers is **fixed** or **keeps changing**.
+
+- **Static inventory** = a file where **you write the hosts by hand**. The IPs don't change, so the list stays the same until you edit it.
+- **Dynamic inventory** = the host list is **fetched automatically at run time** from a source like AWS. In production, servers come and go and IPs keep changing, so Ansible looks them up on every run.
 
 ![Static inventory lists fixed IPs; dynamic inventory asks AWS for the current servers](images/06-static-vs-dynamic-inventory.svg)
 
@@ -297,6 +282,26 @@ ansible-inventory -i aws_ec2.yml --graph
 **What it does:** asks AWS for the matching servers right now and shows them as groups. Launch a new server with the same tag and it appears on the next run, with no file to edit.
 
 > Dynamic inventory needs the `amazon.aws` collection, the `boto3` Python library and AWS access (an IAM role or keys) on the control node.
+
+### Host variables: how to connect to each host
+
+You can put connection settings next to each host:
+
+```ini
+[webservers]
+web1.example.com ansible_user=ubuntu ansible_port=22
+web2.example.com ansible_user=ec2-user ansible_port=2222
+
+[databases]
+db1.example.com ansible_user=admin ansible_ssh_private_key_file=/home/admin/.ssh/id_rsa
+```
+
+| Variable | Means |
+|---|---|
+| `ansible_host` | the real IP to connect to (when the inventory name is a short alias like `node1`) |
+| `ansible_user` | SSH username |
+| `ansible_port` | SSH port (default 22) |
+| `ansible_ssh_private_key_file` | private key to log in with |
 
 **Test any inventory:**
 
