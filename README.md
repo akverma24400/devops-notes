@@ -26,6 +26,7 @@ Each day has an **interview-questions/** folder for quick revision.
 - [Day 18 - Shell Script: Log Cleanup, Backup, Crontab & Disk Usage Alert](day-18-shell-script-delete-old-logs/README.md)
 - [Day 19 - Shell Script Disadvantages & Ansible Introduction](day-19-shell-disadvantages-ansible-intro/README.md)
 - [Day 20 - Ansible Basics: How Ansible Works, Modules, Inventory, Playbooks & Variables](day-20-ansible-data-formats-yaml/README.md)
+- [Day 21 - Ansible Facts, Config Order, Data Types, Conditions, Loops, Filters & Error Handling](day-21-ansible-facts-conditions-loops-filters/README.md)
 
 ## Projects
 

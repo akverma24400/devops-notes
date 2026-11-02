@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5f6368"/></marker></defs>
+  <rect width="960" height="430" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Handling a known error: create the user only if it doesn't exist</text>
+  <g font-size="14">
+    <rect x="40" y="70" width="270" height="130" rx="10" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text x="175" y="96" text-anchor="middle" font-weight="700" fill="#174ea6">Task 1: check</text>
+    <text x="55" y="124" font-family="monospace" font-size="13" fill="#202124">command: id roboshop</text>
+    <text x="55" y="146" font-family="monospace" font-size="13" fill="#202124">register: user_output</text>
+    <text x="55" y="168" font-family="monospace" font-size="13" fill="#202124">ignore_errors: true</text>
+    <text x="55" y="190" font-size="12" fill="#5f6368">failure is expected → don't stop</text>
+    <line x1="312" y1="135" x2="360" y2="135" stroke="#5f6368" stroke-width="2" marker-end="url(#a)"/>
+    <rect x="365" y="70" width="230" height="130" rx="10" fill="#f1f3f4" stroke="#9aa0a6"/>
+    <text x="480" y="96" text-anchor="middle" font-weight="700" fill="#202124">register saves result</text>
+    <text x="380" y="124" font-family="monospace" font-size="13" fill="#202124">user_output.rc</text>
+    <text x="380" y="146" font-family="monospace" font-size="13" fill="#202124">user_output.stdout</text>
+    <text x="380" y="168" font-family="monospace" font-size="13" fill="#202124">user_output.stderr</text>
+    <text x="380" y="190" font-size="12" fill="#5f6368">rc = exit code of the command</text>
+    <line x1="597" y1="135" x2="645" y2="135" stroke="#5f6368" stroke-width="2" marker-end="url(#a)"/>
+    <rect x="650" y="70" width="270" height="130" rx="10" fill="#fef7e0" stroke="#f9ab00"/>
+    <text x="785" y="96" text-anchor="middle" font-weight="700" fill="#b06000">Task 2: create</text>
+    <text x="665" y="124" font-family="monospace" font-size="13" fill="#202124">command: useradd roboshop</text>
+    <text x="665" y="146" font-family="monospace" font-size="13" fill="#202124">when: user_output.rc != 0</text>
+    <rect x="80" y="245" width="370" height="110" rx="10" fill="#fce8e6" stroke="#d93025"/>
+    <text x="265" y="272" text-anchor="middle" font-weight="700" fill="#a50e0e">1st run: user does NOT exist</text>
+    <text x="100" y="300" fill="#202124">id roboshop → rc = 1 (error, ignored)</text>
+    <text x="100" y="324" fill="#202124">rc != 0 → true → useradd <tspan fill="#b06000" font-weight="700">runs</tspan></text>
+    <text x="100" y="346" font-size="12" fill="#5f6368">recap: ignored=1</text>
+    <rect x="510" y="245" width="370" height="110" rx="10" fill="#e6f4ea" stroke="#1e8e3e"/>
+    <text x="695" y="272" text-anchor="middle" font-weight="700" fill="#137333">2nd run: user EXISTS</text>
+    <text x="530" y="300" fill="#202124">id roboshop → rc = 0 (success)</text>
+    <text x="530" y="324" fill="#202124">rc != 0 → false → useradd <tspan fill="#007b83" font-weight="700">skipped</tspan></text>
+    <text x="530" y="346" font-size="12" fill="#5f6368">no "user already exists" error</text>
+    <line x1="740" y1="202" x2="300" y2="241" stroke="#5f6368" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="800" y1="202" x2="710" y2="241" stroke="#5f6368" stroke-width="1.5" marker-end="url(#a)"/>
+  </g>
+  <text x="480" y="390" text-anchor="middle" font-size="14" fill="#202124"><tspan font-weight="700">rc = 0</tspan> → success   ·   <tspan font-weight="700">rc ≠ 0</tspan> → failure</text>
+  <text x="480" y="414" text-anchor="middle" font-size="13" fill="#5f6368">Easier: the user module does this check by itself (idempotent): user: name=roboshop</text>
+</svg>
