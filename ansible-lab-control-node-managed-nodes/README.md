@@ -58,10 +58,15 @@ curl -s https://checkip.amazonaws.com
 
 ```bash
 aws ec2 create-key-pair --key-name ansible-lab --query 'KeyMaterial' --output text > ansible-lab.pem
+```
+
+**What it does:** AWS creates a key pair called `ansible-lab`. AWS keeps the **public key** (and puts it on every server we launch with it). The **private key** is saved to `ansible-lab.pem` on your laptop; AWS shows it **only once**.
+
+```bash
 chmod 400 ansible-lab.pem
 ```
 
-**What it does:** AWS creates a key pair called `ansible-lab`. AWS keeps the **public key** (and puts it on every server we launch with it). The **private key** is saved to `ansible-lab.pem` on your laptop; AWS shows it **only once**. `chmod 400` makes it readable only by you, otherwise SSH refuses to use it.
+**What it does:** makes the key readable only by you, otherwise SSH refuses to use it.
 **Expected:** `ls -l ansible-lab.pem` → `-r-------- ... ansible-lab.pem`
 
 ### Step 4: Create the control node security group + allow SSH from your IP
@@ -205,30 +210,47 @@ ssh -i ansible-lab.pem ec2-user@44.192.106.237
 **What it does:** opens a terminal on the control node. **All the next steps run here.**
 **Expected:** prompt `[ec2-user@ip-172-31-14-80 ~]$`
 
+> Stay as `ec2-user`. Don't switch to root with `sudo su -`: as root, `~` means `/root` and the key in `/home/ec2-user/.ssh/` isn't found. Commands that need admin rights already use `sudo`.
+
 ### Step 12: Protect the key
 
 ```bash
 chmod 400 ~/.ssh/ansible_lab
+```
+
+**What it does:** makes the key readable only by `ec2-user` (SSH refuses keys others can read).
+
+```bash
 ls -lah ~/.ssh/
 ```
 
-**What it does:** makes the key readable only by `ec2-user` (SSH refuses keys others can read), then lists the folder.
+**What it does:** lists the folder to check.
 **Expected:** `ansible_lab` (`-r--------`, the private key) and `authorized_keys` (the public key AWS put here)
 
 ### Step 13: Install Ansible
 
 ```bash
 sudo dnf install ansible-core -y
+```
+
+**What it does:** `dnf` installs Ansible (engine + built-in modules) as root.
+
+```bash
 ansible --version
 ```
 
-**What it does:** `dnf` installs Ansible (engine + built-in modules) as root. `ansible --version` confirms the install and shows which config file is used.
+**What it does:** confirms the install and shows which config file is used.
 **Expected:** `ansible [core 2.x.x]` and `config file = None` (no `ansible.cfg` yet)
 
 ### Step 14: Check port 22 on node1 is reachable
 
 ```bash
 sudo dnf install telnet -y
+```
+
+**What it does:** installs the `telnet` tool.
+
+```bash
 telnet 172.31.5.204 22
 ```
 
@@ -239,42 +261,157 @@ telnet 172.31.5.204 22
 
 ```bash
 ssh -i ~/.ssh/ansible_lab ec2-user@172.31.5.204
-exit
-ssh -i ~/.ssh/ansible_lab ec2-user@172.31.10.232
+```
+
+**What it does:** logs in to node1 with the private key. This proves the **key works**. Type `yes` the first time: it saves node1 in `~/.ssh/known_hosts`, so Ansible won't stop to ask later.
+**Expected:** prompt changes to `[ec2-user@ip-172-31-5-204 ~]$`
+
+```bash
 exit
 ```
 
-**What it does:** logs in to each node with the private key. This proves the **key works**. Typing `yes` the first time saves each node in `~/.ssh/known_hosts`, so Ansible won't stop to ask later.
-**Expected:** the prompt changes to the node, then `exit` brings you back.
+**What it does:** logs out of node1 and brings you back to the control node.
+
+```bash
+ssh -i ~/.ssh/ansible_lab ec2-user@172.31.10.232
+```
+
+**What it does:** the same for node2.
+**Expected:** prompt `[ec2-user@ip-172-31-10-232 ~]$`
+
+```bash
+exit
+```
+
+### Step 15b (optional): Give each server a readable name
+
+With 3 servers, `ip-172-31-...` prompts are easy to mix up. Rename them so the prompt always tells you where you are.
+
+On the **control node**:
+
+```bash
+sudo hostnamectl set-hostname ansible-control
+```
+
+**What it does:** changes the server's name permanently (survives reboot).
+
+```bash
+exec bash
+```
+
+**What it does:** starts a fresh shell. The prompt is built only when a shell starts, so the old shell keeps showing the old name until you do this (or log in again).
+**Expected:** `[ec2-user@ansible-control ~]$`
+
+On **node1** (log in from the control node):
+
+```bash
+ssh -i ~/.ssh/ansible_lab ec2-user@172.31.5.204
+```
+
+```bash
+sudo hostnamectl set-hostname node1
+```
+
+```bash
+exit
+```
+
+On **node2**:
+
+```bash
+ssh -i ~/.ssh/ansible_lab ec2-user@172.31.10.232
+```
+
+```bash
+sudo hostnamectl set-hostname node2
+```
+
+```bash
+exit
+```
+
+**Expected:** next login shows `[ec2-user@node1 ~]$` / `[ec2-user@node2 ~]$`. This only changes the prompt; Ansible still connects using the IPs in the inventory.
 
 ---
 
 # Part 3: Ansible without `ansible.cfg`
 
+> Run everything from here on the **control node**, as `ec2-user` (not root). One command per box, run them **one by one**.
+
 ### Step 16: Create the project folder
 
 ```bash
-mkdir -p ~/ansible-raw-lab/inventory
-cd ~/ansible-raw-lab
+mkdir ansible-raw-lab
+```
+
+**What it does:** creates the project folder in your home (`/home/ec2-user`).
+
+```bash
+cd ansible-raw-lab
+```
+
+**What it does:** moves into the project folder.
+
+```bash
+mkdir inventory
+```
+
+**What it does:** creates a folder called `inventory` inside the project.
+
+```bash
 pwd
 ```
 
-**What it does:** creates the project folder and an `inventory` folder inside it, then moves into the project.
 **Expected:** `/home/ec2-user/ansible-raw-lab`
 
-### Step 17: Create the inventory
+### Step 17: Create the inventory file
 
 ```bash
-cat > inventory/hosts <<'EOF'
+cd inventory
+```
+
+**What it does:** moves into the `inventory` folder.
+
+```bash
+vim hosts
+```
+
+**What it does:** opens a new file called `hosts`. Press `i` (insert mode) and type:
+
+```ini
 [managed_nodes]
 node1 ansible_host=172.31.5.204
 node2 ansible_host=172.31.10.232
-EOF
-cat inventory/hosts
 ```
 
-**What it does:** writes the **inventory**, the list of servers Ansible manages. `[managed_nodes]` is the group name; `node1` is a short name shown in the output; `ansible_host` is the real private IP Ansible connects to.
+Save and quit: press `Esc`, type `:wq`, press `Enter`.
+
+| Line | Meaning |
+|---|---|
+| `[managed_nodes]` | group name |
+| `node1` | short name shown in Ansible output |
+| `ansible_host=172.31.5.204` | the real private IP Ansible connects to |
+
+```bash
+cat hosts
+```
+
+**What it does:** prints the file to check it.
 **Expected:** the 3 lines above.
+
+```bash
+cd ..
+```
+
+**What it does:** goes back up to `~/ansible-raw-lab`. All next commands run from here.
+
+Folder now looks like this:
+
+```
+ansible-raw-lab/
+└── inventory/      ← folder
+    └── hosts       ← file
+```
 
 ### Step 18: Check the inventory
 
@@ -303,6 +440,8 @@ ansible all \
   -m ping
 ```
 
+(This is **one** command; the `\` at the end of a line means "continues on the next line".)
+
 **What it does:**
 
 | Part | Meaning |
@@ -320,15 +459,23 @@ node1 | SUCCESS => { "changed": false, "ping": "pong" }
 node2 | SUCCESS => { "changed": false, "ping": "pong" }
 ```
 
+You may also see a yellow `[WARNING]: ... using the discovered Python interpreter at /usr/bin/python3.9`. It's harmless; Step 21 silences it.
+
 ### Step 20: Run two more commands (see the repetition)
 
 ```bash
 ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --private-key /home/ec2-user/.ssh/ansible_lab -m command -a "uptime"
+```
+
+**What it does:** runs `uptime` on both nodes (`-m command` = run a simple command, `-a` = the command).
+
+```bash
 ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --private-key /home/ec2-user/.ssh/ansible_lab -m shell -a "df -h"
 ```
 
-**What it does:** runs `uptime` and `df -h` on both nodes (`-a` = the command to run). Notice `-i`, `-u` and `--private-key` are typed **again every time**. That's the problem `ansible.cfg` fixes.
-**Expected:** uptime and disk usage for node1 and node2.
+**What it does:** runs `df -h` (disk usage) on both nodes. `-m shell` also allows pipes `|`, `command` does not.
+
+**Notice:** `-i`, `-u` and `--private-key` are typed **again every time**. That's the problem `ansible.cfg` fixes.
 
 ---
 
@@ -338,17 +485,26 @@ ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --priv
 
 ```bash
 cd ~/ansible-raw-lab
-cat > ansible.cfg <<'EOF'
+```
+
+**What it does:** makes sure you're in the project folder (the config file must be created here).
+
+```bash
+vim ansible.cfg
+```
+
+**What it does:** opens a new file called `ansible.cfg`. Press `i` and type:
+
+```ini
 [defaults]
 inventory = ./inventory/hosts
 remote_user = ec2-user
 private_key_file = /home/ec2-user/.ssh/ansible_lab
 host_key_checking = False
-EOF
-cat ansible.cfg
+interpreter_python = auto_silent
 ```
 
-**What it does:** writes Ansible's settings file in the project folder:
+Save and quit: `Esc` → `:wq` → `Enter`.
 
 | Setting | Replaces |
 |---|---|
@@ -356,6 +512,23 @@ cat ansible.cfg
 | `remote_user` | `-u` |
 | `private_key_file` | `--private-key` |
 | `host_key_checking = False` | typing `yes` for new servers (OK for labs, keep it on in production) |
+| `interpreter_python = auto_silent` | still finds Python automatically, but hides the yellow warning |
+
+```bash
+cat ansible.cfg
+```
+
+**What it does:** prints the file to check it.
+**Expected:** the 6 lines above.
+
+Folder now looks like this:
+
+```
+ansible-raw-lab/
+├── ansible.cfg
+└── inventory/
+    └── hosts
+```
 
 ### Step 22: Check Ansible found it
 
@@ -372,39 +545,68 @@ ansible --version
 ansible-config dump --only-changed
 ```
 
-**What it does:** lists the settings that differ from Ansible's defaults, which are the 4 from your `ansible.cfg`.
+**What it does:** lists the settings that differ from Ansible's defaults, which are the ones from your `ansible.cfg`.
 
 ### Step 24: Ping again (the short way)
 
 ```bash
 ansible all -m ping
+```
+
+**What it does:** the same as Step 19, but inventory, user and key now come **from `ansible.cfg`**.
+**Expected:** `SUCCESS` / `pong` for node1 and node2, no warning.
+
+```bash
 ansible all -m command -a "uptime"
 ```
 
-**What it does:** the same as Steps 19–20, but inventory, user and key now come **from `ansible.cfg`**.
-**Expected:** `SUCCESS` / `pong` for node1 and node2.
+**What it does:** the same as Step 20, much shorter.
 
 ### Step 25: Show that the command line overrides `ansible.cfg`
 
 ```bash
-printf "[managed_nodes]\nnode1 ansible_host=172.31.5.204\n" > inventory/only-node1
+vim inventory/only-node1
+```
+
+**What it does:** creates a second inventory with only node1. Press `i` and type:
+
+```ini
+[managed_nodes]
+node1 ansible_host=172.31.5.204
+```
+
+Save and quit: `Esc` → `:wq` → `Enter`.
+
+```bash
 ansible all -i inventory/only-node1 -m ping
 ```
 
-**What it does:** creates an inventory with only node1 and passes it with `-i`. The flag **wins** over `inventory =` in `ansible.cfg`.
+**What it does:** passes the new inventory with `-i`. The flag **wins** over `inventory =` in `ansible.cfg`.
 **Expected:** only `node1 | SUCCESS`
 
 ### Step 26: Show that the folder decides which `ansible.cfg` is used
 
 ```bash
 cd ~
-ansible --version
-cd ~/ansible-raw-lab
+```
+
+```bash
 ansible --version
 ```
 
-**What it does:** Ansible looks for `ansible.cfg` in this order and uses the **first** it finds: `ANSIBLE_CONFIG` variable → `./ansible.cfg` (current folder) → `~/.ansible.cfg` → `/etc/ansible/ansible.cfg`.
-**Expected:** in `~` → `config file = None`; in the project → `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg`
+**Expected:** `config file = None` (no `ansible.cfg` in your home folder)
+
+```bash
+cd ~/ansible-raw-lab
+```
+
+```bash
+ansible --version
+```
+
+**Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg`
+
+**Why:** Ansible looks for `ansible.cfg` in this order and uses the **first** it finds: `ANSIBLE_CONFIG` variable → `./ansible.cfg` (current folder) → `~/.ansible.cfg` → `/etc/ansible/ansible.cfg`.
 
 ---
 
@@ -414,46 +616,78 @@ ansible --version
 
 ```bash
 cd ~
+```
+
+```bash
 export ANSIBLE_CONFIG=/home/ec2-user/ansible-raw-lab/ansible.cfg
-echo $ANSIBLE_CONFIG
+```
+
+**What it does:** sets an environment variable in **this terminal only**. Ansible checks `ANSIBLE_CONFIG` first.
+
+```bash
 ansible --version
+```
+
+**Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg`, even though you're in `~`.
+
+```bash
 ansible all -m ping
 ```
 
-**What it does:** `export` sets an environment variable in **this terminal only**. Ansible checks `ANSIBLE_CONFIG` first, so it uses our file even from `~`.
-**Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg` and `pong` from both nodes.
+**Expected:** `pong` from both nodes.
 
 ### Step 28: Remove it
 
 ```bash
 unset ANSIBLE_CONFIG
-echo $ANSIBLE_CONFIG
+```
+
+**What it does:** deletes the variable from the current terminal.
+
+```bash
 ansible --version
 ```
 
-**What it does:** `unset` deletes the variable from the current terminal.
-**Expected:** empty line, then `config file = None` (we're still in `~`)
+**Expected:** `config file = None` (we're still in `~`)
 
 ### Step 29: Make it permanent with `.bashrc`
 
 ```bash
 echo 'export ANSIBLE_CONFIG=/home/ec2-user/ansible-raw-lab/ansible.cfg' >> ~/.bashrc
+```
+
+**What it does:** `>>` adds the line to the **end** of `~/.bashrc` (a single `>` would overwrite the file!). Bash runs `.bashrc` every time a new terminal opens.
+
+```bash
 source ~/.bashrc
+```
+
+**What it does:** runs `.bashrc` **now**, so no re-login is needed.
+
+```bash
 printenv ANSIBLE_CONFIG
 ```
 
-**What it does:** `>>` adds the line to the **end** of `~/.bashrc` (a single `>` would overwrite the file!). Bash runs `.bashrc` every time a new terminal opens. `source` runs it **now**, so no reboot or re-login is needed.
 **Expected:** `/home/ec2-user/ansible-raw-lab/ansible.cfg`
 
 ### Step 30: Undo it
 
 ```bash
 sed -i '/ANSIBLE_CONFIG/d' ~/.bashrc
+```
+
+**What it does:** deletes the line from `.bashrc`.
+
+```bash
 unset ANSIBLE_CONFIG
+```
+
+**What it does:** deleting the line **doesn't remove** a variable that's already set, so we also `unset` it.
+
+```bash
 printenv ANSIBLE_CONFIG
 ```
 
-**What it does:** `sed -i '/.../d'` deletes the line from `.bashrc`. But deleting the line **doesn't remove** a variable that's already set, so we also `unset` it.
 **Expected:** empty output.
 
 ---
@@ -464,8 +698,21 @@ printenv ANSIBLE_CONFIG
 
 ```bash
 cd ~/ansible-raw-lab
-mkdir -p playbooks
-cat > playbooks/nginx.yaml <<'EOF'
+```
+
+```bash
+mkdir playbooks
+```
+
+**What it does:** creates a folder for playbooks.
+
+```bash
+vim playbooks/nginx.yaml
+```
+
+**What it does:** opens a new playbook file. Press `i` and type (spaces matter in YAML, no tabs):
+
+```yaml
 - name: install and start nginx
   hosts: managed_nodes
   become: yes
@@ -480,10 +727,25 @@ cat > playbooks/nginx.yaml <<'EOF'
       name: nginx
       state: started
       enabled: yes
-EOF
 ```
 
-**What it does:** creates a playbook that runs on the `managed_nodes` group as root (`become: yes`). The `package` module installs nginx; the `service` module starts it now (`started`) and on every boot (`enabled`).
+Save and quit: `Esc` → `:wq` → `Enter`.
+
+**What it means:** runs on the `managed_nodes` group as root (`become: yes`). The `package` module installs nginx; the `service` module starts it now (`started`) and on every boot (`enabled`).
+
+> Tip: if vim auto-indents pasted text into a staircase, type `:set paste` before pressing `i`.
+
+Folder now looks like this:
+
+```
+ansible-raw-lab/
+├── ansible.cfg
+├── inventory/
+│   ├── hosts
+│   └── only-node1
+└── playbooks/
+    └── nginx.yaml
+```
 
 ### Step 32: Run the playbook
 
@@ -498,6 +760,9 @@ ansible-playbook playbooks/nginx.yaml
 
 ```bash
 curl -I http://172.31.5.204
+```
+
+```bash
 curl -I http://172.31.10.232
 ```
 
@@ -512,28 +777,43 @@ curl -I http://172.31.10.232
 
 ```bash
 aws ec2 terminate-instances --instance-ids i-0111ec6253b296e51 i-094cf172053ec2ed0 i-042255565324b6c10
+```
+
+**What it does:** deletes the 3 servers.
+
+```bash
 aws ec2 wait instance-terminated --instance-ids i-0111ec6253b296e51 i-094cf172053ec2ed0 i-042255565324b6c10
 ```
 
-**What it does:** deletes the 3 servers, then **waits** until they're fully gone (security groups can't be deleted while a server still uses them).
+**What it does:** **waits** until they're fully gone (security groups can't be deleted while a server still uses them). Returns with no output when done.
 
 ### Step 35: Delete the security groups
 
 ```bash
 aws ec2 delete-security-group --group-id sg-08bc86c7cf682a5d7
+```
+
+**What it does:** deletes the managed SG **first** (its rule points to the control SG).
+
+```bash
 aws ec2 delete-security-group --group-id sg-0a2587a6c7da61e37
 ```
 
-**What it does:** deletes the managed SG **first** (its rule points to the control SG), then the control SG.
+**What it does:** deletes the control SG.
 
 ### Step 36: Delete the key pair
 
 ```bash
 aws ec2 delete-key-pair --key-name ansible-lab
+```
+
+**What it does:** deletes the key pair in AWS.
+
+```bash
 rm -f ansible-lab.pem
 ```
 
-**What it does:** deletes the key pair in AWS and the `.pem` file on your laptop.
+**What it does:** deletes the `.pem` file on your laptop.
 
 ---
 
