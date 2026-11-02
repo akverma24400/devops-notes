@@ -373,10 +373,6 @@ ansible-inventory -i inventory.ini --graph
 | `ansible-inventory -i inventory.ini --graph backend` | `@backend` and its 3 IPs |
 | `ansible-inventory -i inventory.ini --graph ungrouped` | the orphans |
 
-**Example** (class screenshot; I'll replace it with my own after the lab):
-
-![ansible-inventory --graph: full tree, then by group](images/example-inventory-graph-by-group.png)
-
 ## First playbooks
 
 **Definition:** **Playbook** = a **YAML file** with a list of **plays**. Each play says **which machines** (`hosts`) and **what to do** (`tasks`). Each task runs **one module**.
@@ -555,15 +551,11 @@ localhost : ok=2  changed=0  unreachable=0  failed=0  skipped=0
 
 > Always give every play and task a clear `name`: it's what you read in the output.
 
-**Examples** (class screenshots; I'll replace them with my own after the lab):
+**Examples:**
 
 `01-playbook.yaml`: `ping localhost` → `ok`, recap `ok=2 changed=0 failed=0`
 
-![ansible-playbook 01-playbook.yaml output](images/example-01-playbook-run.png)
-
 `git pull` to get the new `02-playbook.yaml`, then run it: the `debug` module prints `msg`
-
-![git pull then ansible-playbook 02-playbook.yaml output](images/example-02-playbook-run.png)
 
 ## Create the frontend server (managed node)
 
@@ -694,9 +686,7 @@ Ansible checks the target machine's OS   (Gathering Facts)
 ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<password> 04-nginx.yaml
 ```
 
-**Example** (class screenshot, password hidden; I'll replace it with my own after the lab): `git pull` gets the new `04-nginx.yaml`, then the run starts: `Gathering Facts` → `ok: [172.31.20.30]` (the frontend IP from the inventory), then `TASK [install nginx]`:
-
-![ansible-playbook 04-nginx.yaml run on the frontend](images/example-04-nginx-playbook-run.png)
+`git pull` gets the new `04-nginx.yaml`, then the run starts: `Gathering Facts` → `ok: [172.31.20.30]` (the frontend IP from the inventory), then `TASK [install nginx]`.
 
 **Expected output:**
 
@@ -803,8 +793,6 @@ browser ─────────────── http (port 80, allowed in 
 | 5 | in the **inventory** | `[group:vars]` | `09-variables.yaml` + `inventory.ini` |
 | 6 | from the **command line** | `-e "name=value"` | `10-variables.yaml` |
 
-> All the screenshots below are **class examples**; I'll replace them with my own after the lab.
-
 ### 1. Play-level variables (05-variables.yaml)
 
 **Definition:** **Play-level variables** = variables under `vars:` in the **play**; every task in that play can use them.
@@ -830,8 +818,6 @@ browser ─────────────── http (port 80, allowed in 
 | `debug` + `msg` | print the message |
 
 Output: `Hi, I am learning ansible from Sivakumar Reddy M, duration is 10 hrs`
-
-![05-variables.yaml run](images/example-vars-05-play-vars.png)
 
 | Shell | Ansible |
 |---|---|
@@ -865,8 +851,6 @@ Output: `Hi, I am learning ansible from Sivakumar Reddy M, duration is 10 hrs`
 | print the vars | `100acres` | no task variable → uses the **play** variable |
 | print the vars again | `10acres` | task has its own `property` → **task level has priority** |
 
-![06-variables.yaml run](images/example-vars-06-task-vars.png)
-
 ### 3. Variables from a file (07-variables.yaml)
 
 **Definition:** **`vars_files`** = load variables from a **separate YAML file**. Ansible reads the file, loads the data, and the playbook can use it.
@@ -896,8 +880,6 @@ duration: 10 hrs
 **Why a separate file?**
 - keep the variables **away from the code**: change values without touching the playbook
 - many playbooks can use the **same** variables file
-
-![07-variables.yaml run](images/example-vars-07-vars-files.png)
 
 ### 4. Variables from a prompt (08-variables.yaml)
 
@@ -929,8 +911,6 @@ duration: 10 hrs
 | `private: true` | what you type is **hidden** on screen (for a password) |
 
 > ⚠️ Here we **print** the password only **for testing**, to see the variable works. In real projects **never print confidential information**.
-
-![08-variables.yaml run: username visible, password hidden while typing](images/example-vars-08-vars-prompt.png)
 
 ### 5. Variables from the inventory (09-variables.yaml)
 
@@ -966,10 +946,6 @@ ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<
 - `hosts: frontend` → runs on the frontend server (over SSH, so user/password are needed)
 - the values come from `[frontend:vars]`
 
-![inventory.ini with frontend:vars](images/example-vars-09-inventory-frontend-vars.png)
-
-![09-variables.yaml run (password hidden)](images/example-vars-09-inventory-vars-run.png)
-
 ### 6. Variables from the command line (10-variables.yaml)
 
 **Definition:** **Extra vars (`-e`)** = pass a variable **when running** the playbook: `-e "name=value"`.
@@ -990,8 +966,6 @@ ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=<
 |---|---|
 | `ansible-playbook -i inventory.ini 10-variables.yaml` | ❌ `FAILED! ... 'person_name' is undefined` |
 | `ansible-playbook -i inventory.ini 10-variables.yaml -e "person_name=Sivakumar"` | ✅ `Hello Sivakumar` |
-
-![10-variables.yaml: undefined error, then passed with -e](images/example-vars-10-undefined-then-cli.png)
 
 > **Undefined variable = error.** Every `{{ variable }}` must be defined somewhere (play, task, file, prompt, inventory or `-e`).
 
@@ -1052,24 +1026,12 @@ CMD  >  task  >  file  >  prompt  >  PLAY  >  inventory
 
 > **Command line is always 1st preference**, in almost any programming language or tool: what you pass at run time overrides everything.
 
-![inventory.ini with local:vars](images/example-vars-11-inventory-local-vars.png)
-
-![CMD wins, then without -e the task wins over the prompt](images/example-vars-11-cmd-then-task.png)
-
-![task vars commented out](images/example-vars-11-task-commented.png)
-
-![course.yaml: course from file](images/example-vars-11-course-file.png)
-
 #### ⚠️ Spaces in `-e` values need inner quotes
 
 | Command | Output | Why |
 |---|---|---|
 | `-e "course=ansible from cmd"` | `Hi, I am learning ansible` ❌ | `-e "key=value"` splits on **spaces** → `course=ansible` only |
 | `-e "course='ansible from cmd'"` | `Hi, I am learning ansible from cmd` ✅ | inner `'...'` keeps the spaces in one value |
-
-![-e without inner quotes: only "ansible"](images/example-vars-11-cli-quotes-wrong.png)
-
-![-e with inner quotes: "ansible from cmd"](images/example-vars-11-cli-quotes-right.png)
 
 ## What I learned
 
