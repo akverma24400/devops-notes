@@ -89,3 +89,16 @@ The task fails: `'person_name' is undefined`. Define it somewhere or pass it wit
 **20. Why does `-e "course=ansible from cmd"` give only `ansible`?**
 
 `-e` with `key=value` splits on spaces. Use inner quotes: `-e "course='ansible from cmd'"`.
+
+**21. What is the difference between a static and a dynamic inventory?**
+
+Static = a file with a fixed list of hosts you write by hand (INI or YAML); fine for labs and stable servers. Dynamic = the host list is fetched at run time from a source like the AWS API (`aws_ec2` plugin), so servers that come and go (auto scaling) are picked up automatically. Production cloud setups use dynamic.
+
+**22. What is the difference between a host and a group?**
+
+A host is one server in the inventory. A group (`[frontend]`) is a name for many hosts, so one command or play can target all of them. `[name:children]` makes a group of groups.
+
+**23. How does one playbook install a package on both Amazon Linux and Ubuntu?**
+
+Ansible connects to both over SSH the same way, gathers facts to learn the OS, and the generic `package` module uses `dnf` on Amazon Linux/RHEL and `apt` on Ubuntu. The playbook stays the same.
+

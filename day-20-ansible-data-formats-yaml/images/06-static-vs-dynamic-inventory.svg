@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3c4043"/></marker>
+  </defs>
+  <rect width="960" height="430" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">Static vs dynamic inventory</text>
+
+  <!-- static -->
+  <rect x="30" y="60" width="430" height="300" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="245" y="88" text-anchor="middle" font-size="17" font-weight="700" fill="#174ea6">Static: you write the IPs</text>
+  <rect x="50" y="105" width="170" height="110" rx="8" fill="#ffffff" stroke="#8ab4f8"/>
+  <text x="62" y="126" font-size="12" font-weight="700" fill="#5f6368">inventory.ini</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="14" fill="#202124">
+    <text x="62" y="150" font-weight="700" fill="#1a73e8">[frontend]</text>
+    <text x="62" y="172">172.31.20.30</text>
+    <text x="62" y="194">172.31.20.31</text>
+  </g>
+  <line x1="222" y1="160" x2="268" y2="160" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+  <g font-size="13" font-weight="700" fill="#0d652d" text-anchor="middle">
+    <rect x="272" y="112" width="170" height="40" rx="8" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+    <text x="357" y="137">server .30</text>
+    <rect x="272" y="168" width="170" height="40" rx="8" fill="#e6f4ea" stroke="#188038" stroke-width="2"/>
+    <text x="357" y="193">server .31</text>
+  </g>
+  <g font-size="14" fill="#202124">
+    <text x="50" y="250">✔ simple, fixed list of servers</text>
+    <text x="50" y="274">✔ good for labs and small setups</text>
+    <text x="50" y="298">✘ new server or new IP → edit the file by hand</text>
+    <text x="50" y="322">✘ IP in the file goes stale when servers change</text>
+  </g>
+
+  <!-- dynamic -->
+  <rect x="500" y="60" width="430" height="300" rx="10" fill="#f3e8fd" stroke="#9334e6" stroke-width="2"/>
+  <text x="715" y="88" text-anchor="middle" font-size="17" font-weight="700" fill="#681da8">Dynamic: Ansible asks AWS</text>
+  <rect x="520" y="105" width="150" height="110" rx="8" fill="#ffffff" stroke="#c58af9"/>
+  <text x="532" y="126" font-size="12" font-weight="700" fill="#5f6368">aws_ec2.yml</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="13" fill="#202124">
+    <text x="532" y="150">plugin:</text>
+    <text x="544" y="170">aws_ec2</text>
+    <text x="532" y="194">filter: tag</text>
+  </g>
+  <line x1="672" y1="140" x2="718" y2="140" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="722" y="112" width="190" height="56" rx="8" fill="#fef7e0" stroke="#f9ab00" stroke-width="2"/>
+  <text x="817" y="135" text-anchor="middle" font-size="13" font-weight="700" fill="#202124">AWS API</text>
+  <text x="817" y="155" text-anchor="middle" font-size="12" fill="#3c4043">"which servers run now?"</text>
+  <line x1="817" y1="170" x2="817" y2="186" stroke="#3c4043" stroke-width="2" marker-end="url(#a)"/>
+  <text x="722" y="206" font-size="13" fill="#202124">today: 2 servers, tomorrow: 5</text>
+  <g font-size="14" fill="#202124">
+    <text x="520" y="250">✔ list is built fresh on every run</text>
+    <text x="520" y="274">✔ new / deleted servers handled automatically</text>
+    <text x="520" y="298">✔ for production, auto scaling, cloud</text>
+    <text x="520" y="322">✘ needs a plugin + AWS access (IAM)</text>
+  </g>
+
+  <text x="480" y="398" text-anchor="middle" font-size="15" fill="#202124"><tspan font-weight="700">Static</tspan> = IPs written by you, don't change.   <tspan font-weight="700">Dynamic</tspan> = servers come and go, Ansible looks them up each run.</text>
+</svg>

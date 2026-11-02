@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3c4043"/></marker>
+  </defs>
+  <rect width="960" height="560" rx="12" fill="#ffffff"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">One playbook, different operating systems, all over SSH</text>
+
+  <!-- control node -->
+  <rect x="30" y="70" width="300" height="250" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="180" y="98" text-anchor="middle" font-size="17" font-weight="700" fill="#174ea6">Control node</text>
+  <text x="180" y="118" text-anchor="middle" font-size="13" fill="#3c4043">same task for every server</text>
+  <rect x="50" y="135" width="260" height="100" rx="8" fill="#ffffff" stroke="#8ab4f8"/>
+  <g font-family="Consolas, Menlo, monospace" font-size="15" fill="#202124">
+    <text x="64" y="162">- name: install nginx</text>
+    <text x="82" y="186" font-weight="700" fill="#174ea6">package:</text>
+    <text x="100" y="208">name: nginx</text>
+    <text x="100" y="228">state: present</text>
+  </g>
+  <text x="50" y="268" font-size="13" fill="#202124">1. SSH login (port 22)</text>
+  <text x="50" y="288" font-size="13" fill="#202124">2. Gathering Facts → which OS?</text>
+  <text x="50" y="308" font-size="13" fill="#202124">3. run the right command for that OS</text>
+
+  <!-- arrows -->
+  <g stroke="#3c4043" stroke-width="2" fill="none">
+    <line x1="332" y1="195" x2="536" y2="100" marker-end="url(#a)"/>
+    <line x1="332" y1="195" x2="536" y2="195" marker-end="url(#a)"/>
+    <line x1="332" y1="195" x2="536" y2="290" marker-end="url(#a)"/>
+  </g>
+  <rect x="380" y="183" width="110" height="24" rx="12" fill="#fce8e6"/>
+  <text x="435" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#a50e0e">SSH · port 22</text>
+
+  <!-- nodes -->
+  <g>
+    <rect x="540" y="66" width="390" height="70" rx="10" fill="#fff4e5" stroke="#e8710a" stroke-width="2"/>
+    <text x="556" y="94" font-size="16" font-weight="700" fill="#202124">Amazon Linux 2023</text>
+    <text x="556" y="120" font-size="14" fill="#202124">runs:  <tspan font-family="Consolas, Menlo, monospace" font-weight="700" fill="#b06000">dnf install nginx</tspan></text>
+
+    <rect x="540" y="160" width="390" height="70" rx="10" fill="#fce8e6" stroke="#d93025" stroke-width="2"/>
+    <text x="556" y="188" font-size="16" font-weight="700" fill="#202124">RHEL / CentOS</text>
+    <text x="556" y="214" font-size="14" fill="#202124">runs:  <tspan font-family="Consolas, Menlo, monospace" font-weight="700" fill="#a50e0e">dnf (or yum) install nginx</tspan></text>
+
+    <rect x="540" y="254" width="390" height="70" rx="10" fill="#f3e8fd" stroke="#9334e6" stroke-width="2"/>
+    <text x="556" y="282" font-size="16" font-weight="700" fill="#202124">Ubuntu / Debian</text>
+    <text x="556" y="308" font-size="14" fill="#202124">runs:  <tspan font-family="Consolas, Menlo, monospace" font-weight="700" fill="#681da8">apt install nginx</tspan></text>
+  </g>
+
+  <!-- bottom table -->
+  <rect x="30" y="350" width="900" height="190" rx="10" fill="#f8f9fa" stroke="#dadce0"/>
+  <text x="50" y="378" font-size="16" font-weight="700" fill="#202124">What every Linux managed node needs</text>
+  <g font-size="14" fill="#202124">
+    <text x="50" y="406"><tspan font-weight="700">SSH server</tspan> running on port 22 (already there on EC2 Linux)</text>
+    <text x="50" y="430"><tspan font-weight="700">Python 3</tspan> (modules are small Python programs; already there on Amazon Linux, RHEL, Ubuntu)</text>
+    <text x="50" y="454"><tspan font-weight="700">A user + key or password</tspan> Ansible can log in with (ec2-user on Amazon Linux/RHEL, ubuntu on Ubuntu)</text>
+    <text x="50" y="478"><tspan font-weight="700">Port 22 open</tspan> in the security group, from the control node</text>
+    <text x="50" y="514" fill="#3c4043">The playbook doesn't change per OS. The <tspan font-weight="700" fill="#202124">package</tspan> module picks dnf / yum / apt itself → you write it once.</text>
+  </g>
+</svg>

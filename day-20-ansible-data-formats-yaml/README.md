@@ -8,7 +8,7 @@ In this class we learn the **basics of Ansible**: what it is, how it manages ser
 
 | Part | Topic |
 |---|---|
-| **Part 1: Concepts** | what Ansible is · how it connects to managed nodes **over SSH** and runs commands on them · **modules** · **inventory** files · **YAML** · **playbooks** · the Ansible **workflow** and **folder structure** |
+| **Part 1: Concepts** | what Ansible is · **key terms** · how it connects to managed nodes **over SSH** and runs commands on them · **modules** · **inventory** files (static vs dynamic) · **YAML** · **playbooks** · the Ansible **workflow** and **folder structure** |
 | **Part 2: Lab** | security group **inbound rules** · create the **Ansible server** · install Ansible · first playbooks · **multi-play** playbook · create a **managed server** · install **nginx** with a playbook |
 | **Part 3: Variables** | the 6 places to define variables · which value wins |
 
@@ -18,12 +18,13 @@ In this class we learn the **basics of Ansible**: what it is, how it manages ser
 
 **Part 1: Concepts**
 1. [What is Ansible?](#1-what-is-ansible)
-2. [How Ansible connects to managed nodes](#2-how-ansible-connects-to-managed-nodes)
-3. [Modules](#3-modules)
-4. [Inventory](#4-inventory)
-5. [YAML](#5-yaml)
-6. [Playbooks](#6-playbooks)
-7. [Ansible workflow and folder structure](#7-ansible-workflow-and-folder-structure)
+2. [Key terms](#2-key-terms)
+3. [How Ansible connects to managed nodes](#3-how-ansible-connects-to-managed-nodes)
+4. [Modules](#4-modules)
+5. [Inventory](#5-inventory) (static vs dynamic)
+6. [YAML](#6-yaml)
+7. [Playbooks](#7-playbooks)
+8. [Ansible workflow and folder structure](#8-ansible-workflow-and-folder-structure)
 
 **Part 2: Lab**
 - [Step 1: Security group inbound rules](#step-1-security-group-inbound-rules)
@@ -64,7 +65,33 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 
 **Why not just a shell script?** A script works on one server and one OS, and can break if you run it twice. Ansible works on **many servers at once**, on **any Linux OS**, and is **safe to run again and again**.
 
-## 2. How Ansible connects to managed nodes
+## 2. Key terms
+
+**Definition:** the basic words you'll see everywhere in Ansible, one line each. Each one is explained in detail later.
+
+| Term | One-line definition |
+|---|---|
+| **Control node** | the server where Ansible is installed and run from |
+| **Managed node** | a server Ansible configures (needs only SSH + Python) |
+| **Agentless** | nothing is installed on managed nodes; Ansible just uses SSH |
+| **Inventory** | the file (or script) that lists the servers Ansible manages |
+| **Host** | one server in the inventory (a VM, physical server or network device) |
+| **Group** | a name for a set of hosts, so you can target many at once (`[frontend]`) |
+| **Static inventory** | a fixed list of hosts you write by hand |
+| **Dynamic inventory** | the host list is fetched at run time from a source like AWS |
+| **Module** | a small program that does one job (`package`, `service`, `ping`) |
+| **Collection** | a package of modules (`ansible.builtin`, `amazon.aws`) |
+| **Task** | one step in a playbook that runs one module |
+| **Play** | a set of tasks for a set of hosts (`hosts:` + `tasks:`) |
+| **Playbook** | a YAML file with one or more plays |
+| **Ad-hoc command** | run one module from the command line without a playbook (`ansible all -m ping`) |
+| **Facts** | info Ansible collects about a server (OS, IP, memory) in "Gathering Facts" |
+| **Variable** | a name that stores a value, used as `{{ name }}` |
+| **become** | run a task as root (sudo) |
+| **Idempotent** | running it again gives the same result; nothing is changed twice |
+| **`ansible.cfg`** | Ansible's settings file (default inventory, user, key) |
+
+## 3. How Ansible connects to managed nodes
 
 **Definition:**
 - **Control node** (Ansible server) = the server where Ansible is **installed**. You run all commands from here.
@@ -80,7 +107,17 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 
 > In one line: **Ansible = SSH + Python + a list of tasks.**
 
-## 3. Modules
+**Different operating systems, same playbook:** Ansible logs in over SSH to every Linux server the same way. During "Gathering Facts" it finds out the OS, then runs the right command for it.
+
+![One playbook over SSH to Amazon Linux, RHEL and Ubuntu: package module picks dnf or apt](images/07-ssh-different-os.svg)
+
+| Managed node OS | Login user (EC2) | `package` module uses |
+|---|---|---|
+| Amazon Linux 2023 | `ec2-user` | `dnf` |
+| RHEL / CentOS | `ec2-user` | `dnf` (older: `yum`) |
+| Ubuntu / Debian | `ubuntu` | `apt` |
+
+## 4. Modules
 
 **Definition:** **Module** = a small ready-made program that does **one job** on a server: install a package, start a service, copy a file. In Ansible, **everything is done by a module**. A **collection** is a package of modules (for example `ansible.builtin`).
 
@@ -103,7 +140,7 @@ plain server ──(Ansible configures it)──► ready server ──(+ code)�
 
 **Idempotent** = running the same thing many times gives the same result. The second run just says `ok`.
 
-## 4. Inventory
+## 5. Inventory
 
 **Definition:** **Inventory** = a file that lists the **servers Ansible manages**, put into **groups**. Usually called `inventory.ini`.
 
@@ -144,7 +181,93 @@ localhost
 | `ansible roboshop -i inventory.ini -m ping` | all RoboShop servers |
 | `ansible all -i inventory.ini -m ping` | every server in the file |
 
-## 5. YAML
+### Host variables: how to connect to each host
+
+You can put connection settings next to each host:
+
+```ini
+[webservers]
+web1.example.com ansible_user=ubuntu ansible_port=22
+web2.example.com ansible_user=ec2-user ansible_port=2222
+
+[databases]
+db1.example.com ansible_user=admin ansible_ssh_private_key_file=/home/admin/.ssh/id_rsa
+```
+
+| Variable | Means |
+|---|---|
+| `ansible_host` | the real IP to connect to (when the inventory name is a short alias like `node1`) |
+| `ansible_user` | SSH username |
+| `ansible_port` | SSH port (default 22) |
+| `ansible_ssh_private_key_file` | private key to log in with |
+
+### Types of inventory: static vs dynamic
+
+![Static inventory lists fixed IPs; dynamic inventory asks AWS for the current servers](images/06-static-vs-dynamic-inventory.svg)
+
+| | **Static inventory** | **Dynamic inventory** |
+|---|---|---|
+| **Definition** | a file with a **fixed list** of hosts, written by you | the host list is **fetched at run time** from a source like the AWS API |
+| IPs | don't change | servers come and go, so IPs keep changing |
+| Updating | edit the file by hand | automatic, on every run |
+| Format | INI or YAML file | a plugin config file (e.g. `aws_ec2.yml`) |
+| Used for | labs, small or stable setups | **production**, cloud, auto scaling |
+
+**Static inventory in YAML** (same as INI, just another format):
+
+```yaml
+all:
+  children:
+    webservers:
+      hosts:
+        web1.example.com:
+          ansible_user: ubuntu
+    databases:
+      hosts:
+        db1.example.com:
+          ansible_user: admin
+```
+
+`all` = every host, `children` = groups inside it, `hosts` = the servers in a group.
+
+**Dynamic inventory on AWS** (`aws_ec2.yml`): instead of IPs, you tell Ansible **how to find** the servers:
+
+```yaml
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+filters:
+  tag:Project: roboshop
+  instance-state-name: running
+keyed_groups:
+  - key: tags.Name
+    prefix: ""
+```
+
+| Line | Means |
+|---|---|
+| `plugin: amazon.aws.aws_ec2` | use the AWS EC2 inventory plugin |
+| `regions` | which AWS region to look in |
+| `filters` | only running servers with the tag `Project=roboshop` |
+| `keyed_groups` | make a group from each server's `Name` tag (e.g. `frontend`) |
+
+```bash
+ansible-inventory -i aws_ec2.yml --graph
+```
+
+**What it does:** asks AWS for the matching servers right now and shows them as groups. Launch a new server with the same tag and it appears on the next run, with no file to edit.
+
+> Dynamic inventory needs the `amazon.aws` collection, the `boto3` Python library and AWS access (an IAM role or keys) on the control node.
+
+**Test any inventory:**
+
+| Command | Shows |
+|---|---|
+| `ansible-inventory -i <inventory> --graph` | groups and hosts as a tree |
+| `ansible-inventory -i <inventory> --list` | everything as JSON, including host variables |
+| `ansible <group> -i <inventory> -m ping` | checks Ansible can actually log in (`pong`) |
+
+## 6. YAML
 
 **Definition:** **YAML** = a simple text format for data. It uses **`key: value`** pairs, **indentation (spaces)** to show what's inside what, and **`-`** to start a list item. Playbooks are written in YAML.
 
@@ -204,7 +327,7 @@ skills:                       # map inside a map (no -)
 
 > **Tip:** paste your YAML into **[yamlchecker.com](https://yamlchecker.com)** before running it. It shows the line with a wrong space or tab.
 
-## 6. Playbooks
+## 7. Playbooks
 
 **Definition:** **Playbook** = a YAML file that tells Ansible **which servers** to work on and **what tasks** to run on them, in order.
 
@@ -223,7 +346,7 @@ skills:                       # map inside a map (no -)
 | `become: yes` | run as **root** (sudo) |
 | `connection: local` | run on the Ansible server itself, **no SSH** |
 
-## 7. Ansible workflow and folder structure
+## 8. Ansible workflow and folder structure
 
 **Definition:** **Workflow** = the order of steps from writing the files to a configured server.
 
