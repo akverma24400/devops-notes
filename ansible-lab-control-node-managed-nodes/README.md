@@ -287,16 +287,6 @@ internet       ──22──► ✗ blocked (only MY_IP can SSH, and only to th
 
 **Definition:** **`aws ec2 run-instances`** = the AWS CLI command that **creates and starts** EC2 servers.
 
-**First, check that the boxes are filled** (see [4.0](#40-read-this-first-how--and-variables-work)):
-
-```bash
-echo "AMI: $AMI_ID   Control SG: $CONTROL_SG"
-```
-
-✅ Both have values → continue. ❌ One is empty → fill it with [Section 4.7](#47-new-terminal-load-all-ids-again) first.
-
-**Then create the server:**
-
 ```bash
 aws ec2 run-instances \
   --image-id $AMI_ID \
@@ -344,14 +334,6 @@ We save the ID into a box in [Step 4.6](#46-step-6-save-the-ids-and-get-the-ip-a
 ## 4.5 Step 5: Launch the two managed nodes
 
 Same command; only the **security group** (`$MANAGED_SG`) and the **Name** tag change.
-
-**Check first:**
-
-```bash
-echo "AMI: $AMI_ID   Managed SG: $MANAGED_SG"
-```
-
-**Create node1 and node2:**
 
 ```bash
 aws ec2 run-instances \
