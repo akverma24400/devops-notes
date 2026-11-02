@@ -307,10 +307,22 @@ aws ec2 run-instances \
   --query 'Instances[0].InstanceId' --output text
 ```
 
+**Same command with my real values** (no `$`, the IDs are typed directly):
+
+```bash
+aws ec2 run-instances \
+  --image-id ami-0c230065b91270bc6 \
+  --instance-type t3.micro \
+  --key-name ansible-lab \
+  --security-group-ids sg-0a2587a6c7da61e37 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ansible-control}]' \
+  --query 'Instances[0].InstanceId' --output text
+```
+
 Expected: one instance ID on the screen:
 
 ```
-i-0427f97bdd7aee64e
+i-0111ec6253b296e51
 ```
 
 > **Run it only once.** Every run creates **another** server. If you're not sure whether it worked, check first: `aws ec2 describe-instances --filters "Name=tag:Name,Values=ansible-control" "Name=instance-state-name,Values=pending,running" --query 'Reservations[].Instances[].InstanceId' --output text`
@@ -359,7 +371,34 @@ aws ec2 run-instances \
   --query 'Instances[0].InstanceId' --output text
 ```
 
-Expected: two more IDs, one per line (`i-0...`).
+**Same commands with my real values:**
+
+```bash
+aws ec2 run-instances \
+  --image-id ami-0c230065b91270bc6 \
+  --instance-type t3.micro \
+  --key-name ansible-lab \
+  --security-group-ids sg-08bc86c7cf682a5d7 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node1}]' \
+  --query 'Instances[0].InstanceId' --output text
+```
+
+```bash
+aws ec2 run-instances \
+  --image-id ami-0c230065b91270bc6 \
+  --instance-type t3.micro \
+  --key-name ansible-lab \
+  --security-group-ids sg-08bc86c7cf682a5d7 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=node2}]' \
+  --query 'Instances[0].InstanceId' --output text
+```
+
+Expected: two more IDs, one per line:
+
+```
+i-094cf172053ec2ed0
+i-042255565324b6c10
+```
 
 > ⚠️ node1 and node2 use **`$MANAGED_SG`**, not `$CONTROL_SG`. A wrong SG here means the control node can't SSH to them later.
 
@@ -406,7 +445,7 @@ Expected:
 -----------------------------------------------------------------------------
 |                             DescribeInstances                             |
 +-----------------+-----------------------+---------------+-----------------+
-|  ansible-control|  i-0427f97bdd7aee64e  |  172.31.30.10 |  54.210.11.22   |
+|  ansible-control|  i-0111ec6253b296e51  |  172.31.30.10 |  54.210.11.22   |
 |  node1          |  i-0bbb...            |  172.31.16.19 |  3.88.44.55     |
 |  node2          |  i-0ccc...            |  172.31.20.45 |  18.207.66.77   |
 +-----------------+-----------------------+---------------+-----------------+
@@ -456,7 +495,7 @@ echo "CONTROL_PUBLIC_IP=$CONTROL_PUBLIC_IP"
 **Or fill a box by hand**, with the real value and no `$` on the left:
 
 ```bash
-CONTROL_ID=i-0427f97bdd7aee64e
+CONTROL_ID=i-0111ec6253b296e51
 echo $CONTROL_ID
 ```
 
@@ -468,10 +507,12 @@ These are the real IDs from my lab, ready to paste. **Your IDs will be different
 AMI_ID=ami-0c230065b91270bc6          # Amazon Linux 2023
 CONTROL_SG=sg-0a2587a6c7da61e37       # ansible-control-sg
 MANAGED_SG=sg-08bc86c7cf682a5d7       # ansible-managed-sg
-CONTROL_ID=i-0427f97bdd7aee64e        # ansible-control
+CONTROL_ID=i-0111ec6253b296e51        # ansible-control
+NODE1_ID=i-094cf172053ec2ed0          # node1
+NODE2_ID=i-042255565324b6c10          # node2
 MY_IP=$(curl -s https://checkip.amazonaws.com)
 
-echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$CONTROL_ID  MY_IP=$MY_IP"
+echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$CONTROL_ID  NODE1_ID=$NODE1_ID  NODE2_ID=$NODE2_ID  MY_IP=$MY_IP"
 ```
 
 | Name | Type | ID |
@@ -480,9 +521,9 @@ echo "AMI=$AMI_ID  CONTROL_SG=$CONTROL_SG  MANAGED_SG=$MANAGED_SG  CONTROL_ID=$C
 | `ansible-lab` | key pair | `ansible-lab.pem` on my laptop |
 | `ansible-control-sg` | security group | `sg-0a2587a6c7da61e37` |
 | `ansible-managed-sg` | security group | `sg-08bc86c7cf682a5d7` |
-| `ansible-control` | EC2 instance | `i-0427f97bdd7aee64e` |
-| `node1` | EC2 instance | *(add after launch)* |
-| `node2` | EC2 instance | *(add after launch)* |
+| `ansible-control` | EC2 instance | `i-0111ec6253b296e51` |
+| `node1` | EC2 instance | `i-094cf172053ec2ed0` |
+| `node2` | EC2 instance | `i-042255565324b6c10` |
 
 # 5. Prepare the control node
 
