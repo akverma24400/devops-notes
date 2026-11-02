@@ -596,6 +596,30 @@ There are 2 ways to set it, and we try both:
 
 **Remember:** `export` = this terminal only. `.bashrc` = every login.
 
+**In a real project:** if the server runs only **one** Ansible project, you keep it in `.bashrc` and never remove it. But be careful when there are **two** projects:
+
+```
+~/project-a/ansible.cfg   ← ANSIBLE_CONFIG points here (in .bashrc)
+~/project-b/ansible.cfg
+```
+
+Even after `cd ~/project-b`, Ansible **still uses project-a's config**, because `ANSIBLE_CONFIG` comes first in the search order and beats `./ansible.cfg`.
+
+To use the second config when needed:
+
+| Way | Command | Lasts |
+|---|---|---|
+| For one command only | `ANSIBLE_CONFIG=~/project-b/ansible.cfg ansible all -m ping` | that one command |
+| For this terminal | `export ANSIBLE_CONFIG=~/project-b/ansible.cfg` | until logout |
+| Override one setting | `ansible all -i ~/project-b/inventory -m ping` | that one command |
+
+**What teams usually do:**
+
+| Situation | Best practice |
+|---|---|
+| Server runs **one** project | Setting `ANSIBLE_CONFIG` in `.bashrc` is fine |
+| Server runs **many** projects | **Don't** set it. Keep an `ansible.cfg` inside each project folder (in Git) and `cd` into the project before running. The folder decides the config, so nothing can clash. |
+
 ### Step 27: Point Ansible to the config from any folder (temporary)
 
 ```bash
