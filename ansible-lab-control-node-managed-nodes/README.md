@@ -543,6 +543,7 @@ rm -f ansible-lab.pem
 |---|---|---|
 | `InvalidAMIID.Malformed: Invalid id: "-0c23..."` | typed `$ami-...` (a `$` before a real ID) | remove the `$` |
 | `parameter groupId is invalid. The value cannot be empty` | typed `$sg-...` | remove the `$` |
+| `WARNING: connection is not using a post-quantum key exchange algorithm` | laptop has a newer OpenSSH than Amazon Linux 2023; they fall back to standard encryption | **harmless warning**, ignore it |
 | `ssh`/`scp` to the control node: `Connection timed out` | your laptop's IP changed | redo Step 2, then add the new IP to the control SG (Step 4, second command) |
 | `telnet`/`ansible`: `Connection timed out` to a node | wrong SG or wrong IP | node needs `ansible-managed-sg`; use the **private** IP |
 | `Permission denied (publickey)` | wrong key or user | test `ssh -i ~/.ssh/ansible_lab ec2-user@<ip>`; `chmod 400` the key |
