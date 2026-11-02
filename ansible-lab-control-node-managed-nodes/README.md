@@ -283,55 +283,6 @@ ssh -i ~/.ssh/ansible_lab ec2-user@172.31.10.232
 exit
 ```
 
-### Step 15b (optional): Give each server a readable name
-
-With 3 servers, `ip-172-31-...` prompts are easy to mix up. Rename them so the prompt always tells you where you are.
-
-On the **control node**:
-
-```bash
-sudo hostnamectl set-hostname ansible-control
-```
-
-**What it does:** changes the server's name permanently (survives reboot).
-
-```bash
-exec bash
-```
-
-**What it does:** starts a fresh shell. The prompt is built only when a shell starts, so the old shell keeps showing the old name until you do this (or log in again).
-**Expected:** `[ec2-user@ansible-control ~]$`
-
-On **node1** (log in from the control node):
-
-```bash
-ssh -i ~/.ssh/ansible_lab ec2-user@172.31.5.204
-```
-
-```bash
-sudo hostnamectl set-hostname node1
-```
-
-```bash
-exit
-```
-
-On **node2**:
-
-```bash
-ssh -i ~/.ssh/ansible_lab ec2-user@172.31.10.232
-```
-
-```bash
-sudo hostnamectl set-hostname node2
-```
-
-```bash
-exit
-```
-
-**Expected:** next login shows `[ec2-user@node1 ~]$` / `[ec2-user@node2 ~]$`. This only changes the prompt; Ansible still connects using the IPs in the inventory.
-
 ---
 
 # Part 3: Ansible without `ansible.cfg`
