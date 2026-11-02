@@ -790,7 +790,7 @@ exit
 ```
 
 **What it does:** logs you out of the control node and back to your laptop terminal.
-**Check:** the prompt should **not** say `ec2-user@ansible-control` any more.
+**Check:** the prompt should show your laptop again, not `[ec2-user@ip-172-31-14-80 ~]$` (the control node).
 
 ### Step 34: Delete the servers
 
