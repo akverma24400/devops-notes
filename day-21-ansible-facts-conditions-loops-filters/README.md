@@ -69,6 +69,59 @@ In this class we learn how to make playbooks **smart**: read information about t
 
 **Facts are variables** (`variables == facts`). You use them exactly like your own variables, but **you don't define them**: Ansible fills them in from the real server.
 
+### Who collects the facts?
+
+The Ansible server **asks**, but each managed node **collects facts about itself** (only that server knows its own IP, RAM and disks).
+
+| Who | Does |
+|---|---|
+| **Ansible server** | connects and sends the `setup` module to the node |
+| **Managed node** | runs `setup`, reads its own system, sends the result back as **JSON** |
+| **Ansible server** | receives the JSON and keeps it as `ansible_facts` |
+
+### Where are facts stored?
+
+**By default: in the Ansible server's RAM (temporary memory), only while the playbook runs.** They are **not saved to any file**.
+
+```
+Playbook starts
+   ↓
+Gathering Facts → node sends JSON → Ansible server keeps it in RAM
+   ↓
+Your tasks use {{ ansible_facts... }}   ← read from RAM
+   ↓
+Playbook ends → RAM cleared → facts gone
+   ↓
+Next run → gathers them again (always fresh)
+```
+
+**Like a shell variable:** it exists while the script runs and is gone when the script ends.
+
+You can see this default in the class `ansible.cfg`: `;fact_caching=memory` (memory = temporary).
+
+**Saving facts to disk (fact caching):** with hundreds of servers, gathering facts on every run is slow. You can save them as files and reuse them:
+
+```ini
+[defaults]
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = /tmp/ansible_facts
+fact_caching_timeout = 86400
+```
+
+| Setting | Means |
+|---|---|
+| `gathering = smart` | gather facts only if they are **not** already in the cache |
+| `fact_caching = jsonfile` | save facts as JSON files instead of only RAM |
+| `fact_caching_connection` | the folder on the Ansible server (one file per server) |
+| `fact_caching_timeout = 86400` | facts are valid for 1 day (in seconds), then gathered again |
+
+| | Default (`memory`) | With `jsonfile` |
+|---|---|---|
+| Where | RAM of the Ansible server | JSON files on the Ansible server's disk |
+| How long | only during that playbook run | until the timeout (e.g. 1 day) |
+| After the run | gone | still there, reused by the next run |
+
 ### Why do we use facts?
 
 A playbook usually runs on **many different servers**. Facts let the playbook **look at each server and decide**, instead of you hard-coding values.
@@ -895,7 +948,7 @@ sudo userdel -r roboshop
 
 | Topic | One line |
 |---|---|
-| Facts | info Ansible collects about each server (OS, IP, RAM) before the tasks, stored as variables |
+| Facts | each server sends its own info (OS, IP, RAM) as JSON. It's kept in the Ansible server's RAM only during the run |
 | ansible.cfg order | `ANSIBLE_CONFIG` → `./ansible.cfg` → `~/.ansible.cfg` → `/etc/ansible/ansible.cfg`, first one wins |
 | Data types | `str`, `int`, `float`, `bool`, `list`, `dict`. Check with `type_debug` |
 | Conditions | `when:` runs the task only if true, otherwise `skipping` |
@@ -918,6 +971,7 @@ Gathering Facts ──► when: (condition) ──► loop: (repeat) ──► r
 | Question | Answer |
 |---|---|
 | What are facts? | System info (OS, IP, CPU, memory) Ansible gathers from each host with the `setup` module before running tasks. |
+| Where are facts stored? | In the control node's memory, only for that run. Saved to disk only with fact caching (`fact_caching = jsonfile` or `redis`). |
 | How do you disable facts? | `gather_facts: false` in the play. Faster, but `ansible_facts` can't be used. |
 | ansible.cfg precedence? | `ANSIBLE_CONFIG` env var → `./ansible.cfg` → `~/.ansible.cfg` → `/etc/ansible/ansible.cfg`. First one found wins. |
 | How do you write a condition? | With `when:`, no `{{ }}`, e.g. `when: ansible_facts.os_family == "RedHat"`. |
