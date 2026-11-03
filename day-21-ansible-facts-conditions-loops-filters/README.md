@@ -173,6 +173,8 @@ callback_result_format=yaml
 
 **Definition:** **Data type** = the **kind of value** a variable holds.
 
+There are 5 basic types: **string, number, boolean, list, map/dictionary**. Ansible shows them with short names: `str`, `int`/`float` (a number is `int` if whole, `float` if decimal), `bool`, `list`, `dict`.
+
 | Type | Ansible name | Example |
 |---|---|---|
 | String (text) | `str` | `course: "DevOps with AWS"` |
@@ -192,7 +194,7 @@ details:        # dictionary: key: value
   months: 4
 ```
 
-**See the type of a variable:** `{{ course | type_debug }}` → `str`
+**See the type of a variable:** the `type_debug` filter prints it: `{{ course | type_debug }}` → `str`
 
 > `duration: "4"` (in quotes) is a **string**. `duration: 4` is an **int**.
 
@@ -564,6 +566,12 @@ vim 02-data-types.yaml
         details: {{ details }} : {{ details | type_debug }}
         months: {{ duration_in_months }} : {{ duration_in_months | type_debug }}
 ```
+
+| Line | Means |
+|---|---|
+| `vars:` | 6 variables, one of each type |
+| `{{ course }}` | prints the **value** |
+| `{{ course \| type_debug }}` | prints the **type** of that value |
 
 ```bash
 ansible-playbook 02-data-types.yaml
