@@ -177,22 +177,41 @@ Gathering facts takes a few seconds **per server**. If a play doesn't use any fa
 
 ## 2. Which ansible.cfg is used?
 
-**Definition:** **`ansible.cfg`** = Ansible's **settings file** (where the inventory is, which user, which key…).
+**Definition:** **`ansible.cfg`** = Ansible's **settings file** (where the inventory is, which user, which key, how to print output…).
 
-Ansible checks **4 places in order** and uses the **first** file it finds:
+**Default location:** when you install Ansible, the config lives in **`/etc/ansible/ansible.cfg`** (the `/etc` folder is where Linux keeps settings files). It is used for the **whole server**.
+
+But you don't have to keep it there. `ansible.cfg` can be in **4 places**, and Ansible checks them in this **preference order**. It uses the **first** one it finds:
 
 ![ansible.cfg search order](images/01-ansible-cfg-search-order.svg)
 
-| Order | Location | When to use |
+| Order | Location | Means |
 |---|---|---|
-| 1 | `ANSIBLE_CONFIG` environment variable | point to a config file from any folder |
-| 2 | `./ansible.cfg` (current folder) | **the normal way**: one config per project, kept in Git |
-| 3 | `~/.ansible.cfg` (home folder) | one config for your user |
-| 4 | `/etc/ansible/ansible.cfg` | default for the whole server |
+| **1** | `ANSIBLE_CONFIG` **environment variable** | always first: if it is set, Ansible uses that file, **from any folder** |
+| **2** | `./ansible.cfg` (**current working directory**) | the folder you are in when you run the command |
+| **3** | `~/.ansible.cfg` (**home directory**) | a hidden file (note the dot) in your home folder |
+| **4** | `/etc/ansible/ansible.cfg` | the **default**, used only if none of the above exist |
 
 **Check which file is used:** `ansible --version` → the line `config file = ...`
 
-**Our class `ansible.cfg`:**
+### Which option is best? → the current working directory
+
+| Option | Problem |
+|---|---|
+| 1. `ANSIBLE_CONFIG` | easy to forget it's set. It **overrides every project**, even when you `cd` into another one |
+| **2. Current directory** | ✅ **best**: each project has its own `ansible.cfg` **inside the project folder**, saved in **Git** with the playbooks |
+| 3. `~/.ansible.cfg` | only for your user, and not in Git |
+| 4. `/etc/ansible/ansible.cfg` | shared by everyone on the server, needs `sudo` to change, not in Git |
+
+**So we keep `ansible.cfg` in the project folder** (like `ansible-code/ansible.cfg`) and always `cd` into the project before running Ansible.
+
+### Class demo: `ANSIBLE_CONFIG` wins from any folder
+
+The trainer created a folder **`ansible-test`**, copied the config into it, and pointed `ANSIBLE_CONFIG` to it. Then went back to the home folder (`cd`) and ran `ansible --version`.
+
+**Result:** `config file = /home/ec2-user/ansible-test/ansible.cfg`, even though the command was run from the **home** folder, not in `ansible-test`. The environment variable (#1) always wins. (Same steps in the lab: [Step 3](#step-3-check-which-ansiblecfg-is-used).)
+
+### Our class `ansible.cfg`
 
 ```ini
 [defaults]
@@ -465,27 +484,101 @@ git pull
 
 ### Step 3: Check which ansible.cfg is used
 
+**3a. The project config (current directory, #2)**
+
 ```bash
 ansible --version
 ```
 
-**Expected:** `config file = /home/ec2-user/ansible-code/ansible.cfg` (the file in the current folder, order #2).
+**Expected:** `config file = /home/ec2-user/ansible-code/ansible.cfg` (you are in `ansible-code`, so its own file is used).
+
+**3b. The default location (#4)**
+
+```bash
+ls -l /etc/ansible/
+```
+
+**What it does:** shows the default config folder created when Ansible was installed.
+
+**3c. Class demo: `ANSIBLE_CONFIG` (#1) wins from any folder**
 
 ```bash
 cd ~
 ```
 
 ```bash
+ansible-config init --disabled > ansible.cfg
+```
+
+**What it does:** creates a **full sample** `ansible.cfg` with every setting listed and switched off (each line starts with `;`). Good for reading what can be configured.
+
+```bash
+mkdir ansible-test
+```
+
+**What it does:** creates a test folder.
+
+```bash
+cp ansible.cfg ansible-test/
+```
+
+**What it does:** copies the config into `ansible-test`.
+
+```bash
+cd ansible-test
+```
+
+```bash
+pwd
+```
+
+**Expected:** `/home/ec2-user/ansible-test` (copy this path for the next command).
+
+```bash
+export ANSIBLE_CONFIG=/home/ec2-user/ansible-test/ansible.cfg
+```
+
+**What it does:** sets the environment variable (preference #1) to the config in `ansible-test`.
+
+```bash
+cd
+```
+
+**What it does:** `cd` with nothing after it = go to your **home** folder.
+
+```bash
 ansible --version
 ```
 
-**Expected:** `config file = /etc/ansible/ansible.cfg` if that file exists, otherwise `None`.
+**Expected:** `config file = /home/ec2-user/ansible-test/ansible.cfg`. You are in the home folder, but the **environment variable wins**.
+
+**3d. Remove the variable**
+
+```bash
+unset ANSIBLE_CONFIG
+```
+
+```bash
+ansible --version
+```
+
+**Expected:** `config file = /home/ec2-user/ansible.cfg`. Now #1 is gone, and you are in the home folder, which **has** an `ansible.cfg` (from 3c), so #2 **current directory** is used.
+
+> `~/ansible.cfg` (no dot) counts as "current directory" only while you are **in** `~`. The real #3 is the hidden file `~/.ansible.cfg` (with a dot), which works from any folder.
+
+**3e. Clean up and go back to the project**
+
+```bash
+rm -rf ~/ansible-test ~/ansible.cfg
+```
+
+**What it does:** deletes the test folder and the test config.
 
 ```bash
 cd ~/ansible-code
 ```
 
-**What it does:** go back. **Always run the playbooks from this folder**, so `inventory=inventory.ini` is found.
+**Always run the playbooks from this folder**, so its `ansible.cfg` (and `inventory=inventory.ini`) is used.
 
 ### Step 4: Print facts
 
