@@ -630,7 +630,7 @@ months: 4.5 : float
 **Why:** **print test.** A simple way to practise `when` with numbers. Real use: run a task only in some cases (only on RedHat, only if a user is missing…).
 
 ```bash
-vim 03-even-odd.yaml
+vim 03-conditions.yaml
 ```
 
 ```yaml
@@ -651,8 +651,17 @@ vim 03-even-odd.yaml
     when: given_number % 2 != 0
 ```
 
+| Line | Means |
+|---|---|
+| `vars:` `given_number: 10` | the number to check |
+| `%` | **remainder** after dividing: `10 % 2` = `0`, `7 % 2` = `1` |
+| `when: given_number % 2 == 0` | remainder 0 → **even** → this task runs |
+| `when: given_number % 2 != 0` | remainder not 0 → **odd** → this task runs |
+
+The two `when` lines are the **if** and the **else**: only one of them is true, so only one task runs.
+
 ```bash
-ansible-playbook 03-even-odd.yaml
+ansible-playbook 03-conditions.yaml
 ```
 
 **Expected:** `is even` → `10 is even`. `is odd` → `skipping`. Recap: `skipped=1`.
@@ -660,7 +669,7 @@ ansible-playbook 03-even-odd.yaml
 Now try an odd number:
 
 ```bash
-ansible-playbook 03-even-odd.yaml -e '{"given_number": 7}'
+ansible-playbook 03-conditions.yaml -e '{"given_number": 7}'
 ```
 
 **Expected:** `is even` is skipped, `is odd` prints `7 is odd`.
