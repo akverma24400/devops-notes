@@ -709,6 +709,15 @@ vim 04-install-by-os.yaml
 | `dnf:` / `apt:` | package module for RedHat family / Debian family |
 | `when: ansible_facts['os_family'] == ...` | a **fact** picks the right task |
 
+**How does Ansible know the OS?** From the **facts** gathered at the start of the play (`TASK [Gathering Facts]`). `os_family` tells which family the server belongs to:
+
+| `os_family` | Linux distributions | Package manager |
+|---|---|---|
+| `RedHat` | Amazon Linux, RHEL, CentOS, Rocky | `dnf` |
+| `Debian` | Ubuntu, Debian | `apt` |
+
+So the same playbook runs on both: on Amazon Linux the `dnf` task runs, on Ubuntu the `apt` task runs.
+
 ```bash
 ansible-playbook 04-install-by-os.yaml
 ```
