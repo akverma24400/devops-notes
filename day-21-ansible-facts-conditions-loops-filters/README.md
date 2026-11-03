@@ -225,6 +225,17 @@ Each feature of Ansible needs the **right type**. With the wrong type, a task fa
 - condition **true** → the task runs
 - condition **false** → the task is **skipped** (`skipping`)
 
+### No `if/else` in Ansible: use `when`
+
+In shell scripts we write `if/else`. Ansible has **no `if/else` keyword**. Instead, each task gets its own `when`. For "else", write a **second task with the opposite condition**:
+
+| Shell script | Ansible playbook |
+|---|---|
+| `if [ $((num % 2)) -eq 0 ]; then`<br>`  echo "even"` | task 1 with `when: num % 2 == 0` |
+| `else`<br>`  echo "odd"`<br>`fi` | task 2 with `when: num % 2 != 0` |
+
+Only one of the two tasks runs. The other one shows `skipping`.
+
 | Operator | Means | Example |
 |---|---|---|
 | `==` / `!=` | equal / not equal | `when: ansible_facts['os_family'] == "RedHat"` |
