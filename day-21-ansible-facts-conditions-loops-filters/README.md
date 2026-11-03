@@ -528,6 +528,22 @@ playbook ends   → facts gone from memory
 | `msg: \|` | multi-line message (`\|` keeps the new lines) |
 | two `private_ip` lines | the same fact in **bracket** and **dot** style |
 
+**Print only particular info:** printing all facts gives a very long output. If you want to see **only some info** on screen, pick those facts by name in a `debug` message, like the 2nd task does:
+
+```yaml
+  - name: print some info
+    debug:
+      msg: |
+        OS Family: {{ ansible_facts['os_family'] }}
+        private_ip: {{ ansible_facts.default_ipv4.address }}
+        private_ip: {{ ansible_facts['default_ipv4']['address'] }}
+```
+
+| Task | Prints |
+|---|---|
+| 1st task: `msg: "{{ ansible_facts }}"` | **all** facts (use it to find the fact names) |
+| 2nd task: `msg: \|` with chosen facts | **only** the info you asked for: OS family + private IP |
+
 ```bash
 ansible-playbook 12-gather-facts.yaml
 ```
