@@ -2,7 +2,7 @@
 
 Create 3 EC2 servers with the AWS CLI, install Ansible on one (the **control node**), and manage the other two (**node1**, **node2**) over SSH: first without `ansible.cfg`, then with it.
 
-**OS:** Amazon Linux 2023 · **Region:** us-east-1 · **Size:** t3.micro · [Interview questions](interview-questions/README.md)
+**OS:** Amazon Linux 2023 · **Region:** us-east-1 · **Size:** t3.micro · [Interview questions](interview-questions/README.md) · [Hands-on screenshots](hands-on/README.md)
 
 > All IDs and IPs below are **from my run**. When you do the lab, **replace them with yours**.
 
@@ -166,10 +166,6 @@ aws ec2 run-instances \
 **What it does:** same as Step 7, name `node2`.
 **Expected:** `i-042255565324b6c10`
 
-**Screenshot:** Creating the control node, node1 and node2 (each prints its instance ID)
-
-![Creating the control node, node1 and node2 (each prints its instance ID)](images/01-create-3-servers.png)
-
 ### Step 9: Get the IP addresses
 
 ```bash
@@ -192,14 +188,6 @@ aws ec2 describe-instances \
 
 If a server is missing, wait 30 seconds and run it again.
 
-**Screenshot:** All 3 running, with private and public IPs
-
-![All 3 running, with private and public IPs](images/02-wait-and-get-ips.png)
-
-**Screenshot:** The same 3 servers in the EC2 console
-
-![The same 3 servers in the EC2 console](images/03-console-3-running.png)
-
 ---
 
 # Part 2: Prepare the control node
@@ -212,10 +200,6 @@ scp -i ansible-lab.pem ansible-lab.pem ec2-user@44.192.106.237:/home/ec2-user/.s
 
 **What it does:** `scp` copies a file over SSH. It logs in to the control node with `ansible-lab.pem` and copies that same key there as `~/.ssh/ansible_lab`. The control node needs it to SSH into node1 and node2. Type `yes` the first time.
 **Expected:** `ansible-lab.pem   100%  1679 ...`
-
-**Screenshot:** Key copied to the control node with scp
-
-![Key copied to the control node with scp](images/04-scp-key.png)
 
 ### Step 11: Log in to the control node
 
@@ -243,10 +227,6 @@ ls -lah ~/.ssh/
 **What it does:** lists the folder to check.
 **Expected:** `ansible_lab` (`-r--------`, the private key) and `authorized_keys` (the public key AWS put here)
 
-**Screenshot:** Logged in to the control node, key protected with chmod 400
-
-![Logged in to the control node, key protected with chmod 400](images/05-login-chmod-key.png)
-
 ### Step 13: Install Ansible
 
 ```bash
@@ -261,10 +241,6 @@ ansible --version
 
 **What it does:** confirms the install and shows which config file is used.
 **Expected:** `ansible [core 2.x.x]` and `config file = None` (no `ansible.cfg` yet)
-
-**Screenshot:** ansible-core 2.15.3 installed, config file = None
-
-![ansible-core 2.15.3 installed, config file = None](images/06-install-ansible.png)
 
 ### Step 14: Check port 22 on node1 is reachable
 
@@ -436,10 +412,6 @@ node2 | SUCCESS => { "changed": false, "ping": "pong" }
 
 You may also see a yellow `[WARNING]: ... using the discovered Python interpreter at /usr/bin/python3.9`. It's harmless; Step 21 silences it.
 
-**Screenshot:** Inventory graph + ping the long way (note the yellow Python warnings)
-
-![Inventory graph + ping the long way (note the yellow Python warnings)](images/07-inventory-graph-and-ping-long.png)
-
 ### Step 20: Run two more commands (see the repetition)
 
 ```bash
@@ -455,10 +427,6 @@ ansible all -i /home/ec2-user/ansible-raw-lab/inventory/hosts -u ec2-user --priv
 **What it does:** runs `df -h` (disk usage) on both nodes. `-m shell` also allows pipes `|`, `command` does not.
 
 **Notice:** `-i`, `-u` and `--private-key` are typed **again every time**. That's the problem `ansible.cfg` fixes.
-
-**Screenshot:** uptime and df -h, typing -i, -u and --private-key every time
-
-![uptime and df -h, typing -i, -u and --private-key every time](images/08-uptime-df-long-way.png)
 
 ---
 
@@ -533,10 +501,6 @@ ansible-raw-lab/
     └── hosts
 ```
 
-**Screenshot:** ansible.cfg in vim
-
-![ansible.cfg in vim](images/09-ansible-cfg.png)
-
 ### Step 22: Check Ansible found it
 
 ```bash
@@ -545,10 +509,6 @@ ansible --version
 
 **What it does:** shows which config file Ansible is using.
 **Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg` (was `None` in Step 13)
-
-**Screenshot:** Key path found with realpath, and Ansible now uses ansible-raw-lab/ansible.cfg
-
-![Key path found with realpath, and Ansible now uses ansible-raw-lab/ansible.cfg](images/10-key-path-and-config-found.png)
 
 ### Step 23: See only the settings you changed
 
@@ -572,10 +532,6 @@ ansible all -m command -a "uptime"
 ```
 
 **What it does:** the same as Step 20, much shorter.
-
-**Screenshot:** Short commands, no warnings
-
-![Short commands, no warnings](images/11-ping-short-way.png)
 
 ### Step 25: Show that the command line overrides `ansible.cfg`
 
@@ -622,10 +578,6 @@ ansible --version
 **Expected:** `config file = /home/ec2-user/ansible-raw-lab/ansible.cfg`
 
 **Why:** Ansible looks for `ansible.cfg` in this order and uses the **first** it finds: `ANSIBLE_CONFIG` variable → `./ansible.cfg` (current folder) → `~/.ansible.cfg` → `/etc/ansible/ansible.cfg`.
-
-**Screenshot:** In ~ → config file = None. In ~/ansible-raw-lab → ansible.cfg found
-
-![In ~ → config file = None. In ~/ansible-raw-lab → ansible.cfg found](images/12-folder-decides-config.png)
 
 ---
 
@@ -692,10 +644,6 @@ ansible all -m ping
 
 **Expected:** `pong` from both nodes.
 
-**Screenshot:** export ANSIBLE_CONFIG works from ~
-
-![export ANSIBLE_CONFIG works from ~](images/13-ansible-config-export.png)
-
 ### Step 28: Remove it
 
 ```bash
@@ -709,10 +657,6 @@ ansible --version
 ```
 
 **Expected:** `config file = None` (we're still in `~`)
-
-**Screenshot:** After unset → config file = None again
-
-![After unset → config file = None again](images/14-ansible-config-unset.png)
 
 ### Step 29: Make it permanent with `.bashrc`
 
@@ -753,10 +697,6 @@ printenv ANSIBLE_CONFIG
 ```
 
 **Expected:** empty output.
-
-**Screenshot:** Permanent with .bashrc, then undone
-
-![Permanent with .bashrc, then undone](images/15-bashrc-permanent-and-undo.png)
 
 ---
 
@@ -815,10 +755,6 @@ ansible-raw-lab/
     └── nginx.yaml
 ```
 
-**Screenshot:** The nginx playbook in vim
-
-![The nginx playbook in vim](images/16-nginx-playbook.png)
-
 ### Step 32: Run the playbook
 
 ```bash
@@ -827,10 +763,6 @@ ansible-playbook playbooks/nginx.yaml
 
 **What it does:** runs the playbook on node1 and node2. No `-i`, `-u` or `--private-key` needed, because `ansible.cfg` provides them.
 **Expected:** `changed=2` for each node. Run it again → `changed=0` (already done: **idempotent**).
-
-**Screenshot:** Playbook run: changed=2, failed=0 on both nodes
-
-![Playbook run: changed=2, failed=0 on both nodes](images/17-run-playbook.png)
 
 ### Step 33: Check nginx
 
@@ -844,18 +776,6 @@ curl -I http://172.31.10.232
 
 **What it does:** requests the nginx page from each node (from the control node, using private IPs).
 **Expected:** `HTTP/1.1 200 OK` and `Server: nginx`. In a browser, `http://13.219.224.71` and `http://44.214.4.44` show the nginx welcome page.
-
-**Screenshot:** curl from the control node: 200 OK, Server: nginx
-
-![curl from the control node: 200 OK, Server: nginx](images/18-curl-nginx.png)
-
-**Screenshot:** node1 in the browser
-
-![node1 in the browser](images/19-browser-node1.png)
-
-**Screenshot:** node2 in the browser
-
-![node2 in the browser](images/20-browser-node2.png)
 
 ---
 
@@ -885,10 +805,6 @@ aws ec2 wait instance-terminated --instance-ids i-0111ec6253b296e51 i-094cf17205
 ```
 
 **What it does:** **waits** until they're fully gone (security groups can't be deleted while a server still uses them). Returns with no output when done.
-
-**Screenshot:** All 3 servers terminated
-
-![All 3 servers terminated](images/21-terminated.png)
 
 ### Step 35: Delete the security groups
 
