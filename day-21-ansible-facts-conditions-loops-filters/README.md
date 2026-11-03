@@ -213,7 +213,7 @@ Each feature of Ansible needs the **right type**. With the wrong type, a task fa
 
 ## 4. Conditions (`when`)
 
-**Definition:** **Condition** = a check that decides **whether a task runs or not**. The keyword is **`when`**.
+**Definition:** **Condition** = a check Ansible uses to **decide whether to execute a task or not**. The keyword is **`when`**.
 
 ```yaml
 - name: is even
