@@ -333,6 +333,13 @@ Step 18    clean up
 
 All playbooks run on the **Ansible server itself** (`hosts: local` + `connection: local`), so **one server is enough**.
 
+**Print test or real work?**
+
+| Steps | Type | What they do |
+|---|---|---|
+| 7, 8, 9, 11, 14 | **print test** | use `debug` (Ansible's `echo`) to **print** values, just to **see how a feature works**. Nothing changes on the server |
+| 10, 12, 13, 15, 16, 17 | **real work** | install/remove packages, create a user, write a file: what you'd do on real servers |
+
 **How to create each playbook file:** `vim <file>` → press `i` → paste the YAML → `Esc` → `:wq` → `Enter`.
 (If the pasted lines become a staircase, type `:set paste` before pressing `i`.)
 
@@ -446,6 +453,8 @@ ansible-inventory --graph
 
 ### Step 6: See which ansible.cfg is used
 
+**Why:** to check that Ansible really uses **our** `ansible.cfg`, and to see the preference order working.
+
 **6a. The project folder (#2 current folder)**
 
 ```bash
@@ -494,6 +503,8 @@ cd ~/ansible-day21
 
 ### Step 7: Facts
 
+**Why:** **print test.** To see **what Ansible knows** about the server, and the exact fact names. In real playbooks you **use** these facts (Step 10), you don't print them.
+
 When the play starts, Ansible **gathers the facts and stores them** in `ansible_facts`, but we **can't see them on screen**: `TASK [Gathering Facts]` only shows `ok`. **To see what it gathered, print it with `debug`.**
 
 ```bash
@@ -534,6 +545,8 @@ ansible-playbook 01-facts.yaml
 > In real playbooks we don't print facts, we **use** them (for example in `when:`). Printing is only to learn the names and check the values.
 
 ### Step 8: Data types
+
+**Why:** **print test.** To see the 5 types and how Ansible names them. It matters later: loops need a **list**, `item.name` needs a **dict**, and math like `%` needs a **number**, not text (Step 9).
 
 ```bash
 vim 02-data-types.yaml
@@ -590,6 +603,8 @@ months: 4.5 : float
 
 ### Step 9: Condition: even or odd
 
+**Why:** **print test.** A simple way to practise `when` with numbers. Real use: run a task only in some cases (only on RedHat, only if a user is missing…).
+
 ```bash
 vim 03-even-odd.yaml
 ```
@@ -630,6 +645,8 @@ ansible-playbook 03-even-odd.yaml -e '{"given_number": 7}'
 
 ### Step 10: Condition: install nginx by OS
 
+**Why:** **real use.** One playbook installs nginx on **any** OS: a fact (`os_family`) + `when` picks `dnf` or `apt`.
+
 ```bash
 vim 04-install-by-os.yaml
 ```
@@ -667,6 +684,8 @@ ansible-playbook 04-install-by-os.yaml
 
 ### Step 11: Loop over names
 
+**Why:** **print test.** The simplest way to see how `loop` and `item` work.
+
 ```bash
 vim 05-loop-names.yaml
 ```
@@ -698,6 +717,8 @@ ok: [localhost] => (item=Raheem)   msg: Hi Raheem
 ```
 
 ### Step 12: Loop to install packages
+
+**Why:** **real use.** Install many packages with **one** task instead of writing one task per package.
 
 ```bash
 vim 06-loop-packages.yaml
@@ -734,6 +755,8 @@ ansible-playbook 06-loop-packages.yaml
 **Expected:** one line per package: `changed`, or `ok` if it was already installed.
 
 ### Step 13: Loop over a list of dictionaries
+
+**Why:** **real use.** Give each item more than one value (`name` + `state`), so one task can install some packages and remove others.
 
 Each item has a **name** and a **state**, so one task can install some packages and remove others.
 
@@ -772,6 +795,8 @@ ansible-playbook 07-loop-dict.yaml
 **Expected:** `git` → `ok` (already installed), `tree` and `nginx` → `changed` (removed).
 
 ### Step 14: Filters
+
+**Why:** **print test** of the most used filters. Real use: give a **default** when a variable is missing, convert **text → number** before comparing, turn a list into one line of text.
 
 ```bash
 vim 08-filters.yaml
@@ -837,6 +862,8 @@ ansible-playbook 08-filters.yaml -e person_name=Suresh
 
 ### Step 15: Error handling: create a user only if missing
 
+**Why:** **real use.** Running `useradd` twice fails ("user already exists"). So we **check first** and create the user **only if it's missing**. The same check is used in real app setups (a `roboshop` user for the app).
+
 There's no simple module to just **check** whether a user exists, so we use the Linux command `id`. It fails (`rc` not 0) when the user is missing. That's a **known** error, so we handle it.
 
 ```bash
@@ -891,6 +918,8 @@ ansible-playbook 09-error-handling.yaml
 
 ### Step 16: Idempotency: the same with one module
 
+**Why:** **real use, the right way.** Same result as Step 15 with one module, because the module checks by itself.
+
 The `user` module checks by itself, so one task does what Step 15 did in three.
 
 ```bash
@@ -915,6 +944,8 @@ ansible-playbook 10-idempotency.yaml
 **Expected:** `ok`, because the user already exists from Step 15, so nothing changes. On a new server the first run is `changed`, and every run after that is `ok`.
 
 ### Step 17: command vs shell
+
+**Why:** to see **when you need `shell`**: commands with a pipe `|` or redirect `>` only work with `shell`.
 
 ```bash
 vim 11-shell.yaml
