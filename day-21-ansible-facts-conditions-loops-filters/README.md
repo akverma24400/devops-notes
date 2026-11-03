@@ -28,7 +28,7 @@ In this class we learn how to make playbooks **smart**: read information about t
 
 **Part 2: Lab**
 - [Step 1: Security group rules](#step-1-security-group-rules)
-- [Step 2: Get the latest class code](#step-2-get-the-latest-class-code)
+- [Step 2: Get the latest code](#step-2-get-the-latest-code)
 - [Step 3: Check which ansible.cfg is used](#step-3-check-which-ansiblecfg-is-used)
 - [Step 4: Print facts](#step-4-print-facts)
 - [Step 5: Data types](#step-5-data-types)
@@ -97,7 +97,7 @@ Next run → gathers them again (always fresh)
 
 **Like a shell variable:** it exists while the script runs and is gone when the script ends.
 
-You can see this default in the class `ansible.cfg`: `;fact_caching=memory` (memory = temporary).
+You can see this default in the sample `ansible.cfg`: `;fact_caching=memory` (memory = temporary).
 
 **Saving facts to disk (fact caching):** with hundreds of servers, gathering facts on every run is slow. You can save them as files and reuse them:
 
@@ -205,11 +205,15 @@ But you don't have to keep it there. `ansible.cfg` can be in **4 places**, and A
 
 **So we keep `ansible.cfg` in the project folder** (like `ansible-code/ansible.cfg`) and always `cd` into the project before running Ansible.
 
-### Class demo: `ANSIBLE_CONFIG` wins from any folder
+### Demo: `ANSIBLE_CONFIG` wins from any folder
 
-The trainer created a folder **`ansible-test`**, copied the config into it, and pointed `ANSIBLE_CONFIG` to it. Then went back to the home folder (`cd`) and ran `ansible --version`.
+Let's prove that the environment variable always comes first:
 
-**Result:** `config file = /home/ec2-user/ansible-test/ansible.cfg`, even though the command was run from the **home** folder, not in `ansible-test`. The environment variable (#1) always wins. (Same steps in the lab: [Step 3](#step-3-check-which-ansiblecfg-is-used).)
+1. Create a folder **`ansible-test`** and copy an `ansible.cfg` into it.
+2. Point `ANSIBLE_CONFIG` to that file.
+3. Go back to the home folder (`cd`) and run `ansible --version`.
+
+**Result:** `config file = /home/ec2-user/ansible-test/ansible.cfg`. We are in the **home** folder, not in `ansible-test`, but Ansible still uses that file, because the environment variable (#1) always wins. (Same steps in the lab: [Step 3](#step-3-check-which-ansiblecfg-is-used).)
 
 ### Setting values in ansible.cfg
 
@@ -228,9 +232,9 @@ The full sample file (`ansible-config init --disabled`) lists **every** setting,
 
 **To use a setting:** remove the `;` and give it a value. Settings go under their **section**, like `[defaults]` or `[privilege_escalation]`.
 
-### Our class `ansible.cfg`
+### Our `ansible.cfg`
 
-In class we switched on 2 settings in `[defaults]`:
+For our playbooks we switch on 2 settings in `[defaults]`:
 
 ```ini
 [defaults]
@@ -437,7 +441,7 @@ With `command`, `|` is **not** a pipe. It is passed to `cat` as a file name, so 
 
 **Two ways to get the same safe result:**
 
-| Way | How | Class file |
+| Way | How | File |
 |---|---|---|
 | Hard way | `command: id roboshop` + `register` + `ignore_errors` + `when: rc != 0` | `20-error-handling.yaml` |
 | **Easy way** | `user:` module, which checks by itself | `21-idempotency.yaml` |
@@ -450,7 +454,7 @@ With `command`, `|` is **not** a pipe. It is passed to `cat` as a file name, so 
 
 ```
 Step 1  security group rules
-Step 2–3  class code + which ansible.cfg
+Step 2–3  get the code + which ansible.cfg
 Steps 4–14  one playbook per concept, run on the Ansible server itself (hosts: local, connection: local)
 ```
 
@@ -507,7 +511,7 @@ aws ec2 authorize-security-group-ingress --group-name roboshop-frontend --protoc
 > `aws ec2 authorize-security-group-ingress --group-name roboshop-common --protocol tcp --port 22 --source-group roboshop-common`
 > Today's playbooks only run on the Ansible server itself, so this isn't needed yet.
 
-### Step 2: Get the latest class code
+### Step 2: Get the latest code
 
 Log in to the Ansible server, then:
 
@@ -539,7 +543,7 @@ ls -l /etc/ansible/
 
 **What it does:** shows the default config folder created when Ansible was installed.
 
-**3c. Class demo: `ANSIBLE_CONFIG` (#1) wins from any folder**
+**3c. Demo: `ANSIBLE_CONFIG` (#1) wins from any folder**
 
 ```bash
 cd ~
