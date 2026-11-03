@@ -211,18 +211,57 @@ The trainer created a folder **`ansible-test`**, copied the config into it, and 
 
 **Result:** `config file = /home/ec2-user/ansible-test/ansible.cfg`, even though the command was run from the **home** folder, not in `ansible-test`. The environment variable (#1) always wins. (Same steps in the lab: [Step 3](#step-3-check-which-ansiblecfg-is-used).)
 
+### Setting values in ansible.cfg
+
+The full sample file (`ansible-config init --disabled`) lists **every** setting, each with a `#` comment explaining it, and the setting itself **switched off** with `;` at the start:
+
+```ini
+# (pathlist) Comma separated list of Ansible inventory sources
+;inventory=
+```
+
+| Line starts with | Means |
+|---|---|
+| `#` | a comment (explanation only) |
+| `;` | a setting that is **off** (Ansible uses its built-in default) |
+| nothing | a setting that is **on** |
+
+**To use a setting:** remove the `;` and give it a value. Settings go under their **section**, like `[defaults]` or `[privilege_escalation]`.
+
 ### Our class `ansible.cfg`
+
+In class we switched on 2 settings in `[defaults]`:
 
 ```ini
 [defaults]
-inventory=inventory.ini
 stdout_callback=yaml
+inventory=inventory.ini
 ```
 
 | Setting | Means |
 |---|---|
-| `inventory=inventory.ini` | no need to type `-i inventory.ini` every time |
 | `stdout_callback=yaml` | print task results as **YAML** (easier to read than JSON) |
+| `inventory=inventory.ini` | the inventory file to use, so **no need to pass `-i inventory.ini`** in the command |
+
+**Before and after `inventory=inventory.ini`:**
+
+| Without the setting | With the setting |
+|---|---|
+| `ansible-playbook -i inventory.ini 12-gather-facts.yaml` | `ansible-playbook 12-gather-facts.yaml` |
+
+Use this if you want shorter commands. Passing `-i` still works, and it **overrides** the setting for that one command.
+
+**Other useful settings from the same file** (switch them on only if you need them):
+
+| Setting | Section | Means |
+|---|---|---|
+| `remote_user=ec2-user` | `[defaults]` | user to log in with, replaces `-u` |
+| `private_key_file=/home/ec2-user/.ssh/key.pem` | `[defaults]` | SSH key, replaces `--private-key` |
+| `host_key_checking=False` | `[defaults]` | don't ask `yes/no` for new servers (labs only) |
+| `interpreter_python=auto_silent` | `[defaults]` | hide the "discovered Python interpreter" warning |
+| `forks=5` | `[defaults]` | how many servers to work on **at the same time** (default 5) |
+| `log_path=./ansible.log` | `[defaults]` | save the output to a log file |
+| `become=True` | `[privilege_escalation]` | run every task as root, like `become: yes` in every play |
 
 > **If you get** `Could not load 'yaml' callback plugin`: newer Ansible versions removed that plugin. Use this line instead, which does the same:
 > `callback_result_format=yaml`
