@@ -198,6 +198,19 @@ details:        # dictionary: key: value
 
 > `duration: "4"` (in quotes) is a **string**. `duration: 4` is an **int**.
 
+### Why do we need to know data types?
+
+Each feature of Ansible needs the **right type**. With the wrong type, a task fails or gives a wrong answer:
+
+| Feature | Needs | Wrong type → problem |
+|---|---|---|
+| Math / compare numbers (`%`, `>`) | **number** | `"7" % 2` fails (text can't do math). `"10" > "9"` is **false** (text is compared letter by letter) |
+| `loop:` | **list** | loop runs over each item of the list |
+| `item.name`, `item.state` | **dict** | only a dictionary has keys like `name` |
+| `when: is_live` | **bool** | `true`/`false` decide if the task runs |
+
+**So:** before using a variable, know its type. If it's the wrong type, convert it with a filter (`{{ "7" | int }}` → number). Check it with `type_debug`.
+
 ## 4. Conditions (`when`)
 
 **Definition:** **Condition** = a check that decides **whether a task runs or not**. The keyword is **`when`**.
